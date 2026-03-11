@@ -21,6 +21,7 @@ targets:
       - path: Gridlet/Resources
     settings:
       base:
+        CODE_SIGN_STYLE: Automatic
         PRODUCT_BUNDLE_IDENTIFIER: com.timheuer.gridlet
         INFOPLIST_KEY_CFBundleDisplayName: "Gridlet"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.puzzle-games"
@@ -44,4 +45,5 @@ targets:
       - target: Gridlet
     settings:
       base:
+        CODE_SIGN_STYLE: Automatic
         PRODUCT_BUNDLE_IDENTIFIER: com.timheuer.gridlet.tests
