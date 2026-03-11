@@ -8,6 +8,7 @@ struct PuzzleView: View {
     @State private var timerTask: Task<Void, Never>?
     @State private var showCompletion = false
     @State private var showDevInfo = false
+    @State private var showIncorrectBanner = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,18 +33,18 @@ struct PuzzleView: View {
 
             Spacer(minLength: 8)
 
-            // Keyboard
-            if !viewModel.isCompleted {
-                KeyboardView(
-                    onLetter: { letter in
-                        viewModel.enterLetter(letter)
-                        checkForCompletion()
-                    },
-                    onBackspace: {
-                        viewModel.backspace()
-                    }
-                )
-            }
+            // Keyboard — always present to preserve layout
+            KeyboardView(
+                onLetter: { letter in
+                    viewModel.enterLetter(letter)
+                    checkForCompletion()
+                },
+                onBackspace: {
+                    viewModel.backspace()
+                }
+            )
+            .opacity(viewModel.isCompleted ? 0 : 1)
+            .disabled(viewModel.isCompleted)
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(viewModel.isCompleted)
@@ -52,6 +53,27 @@ struct PuzzleView: View {
         .overlay {
             if showCompletion {
                 completionOverlay
+            }
+        }
+        .overlay(alignment: .top) {
+            if showIncorrectBanner {
+                incorrectBanner
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .onChange(of: viewModel.showIncorrectMessage) { _, newValue in
+            if newValue {
+                viewModel.showIncorrectMessage = false
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showIncorrectBanner = true
+                }
+                // Auto-dismiss after 3 seconds
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(3))
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showIncorrectBanner = false
+                    }
+                }
             }
         }
         .sheet(isPresented: $showDevInfo) {
@@ -139,6 +161,21 @@ struct PuzzleView: View {
             .padding(32)
         }
         .transition(.opacity)
+    }
+
+    // MARK: - Incorrect Banner
+
+    private var incorrectBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.yellow)
+            Text("Something's not quite right — keep trying!")
+                .font(.subheadline.weight(.medium))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.ultraThickMaterial, in: Capsule())
+        .padding(.top, 8)
     }
 
     // MARK: - Helpers

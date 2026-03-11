@@ -24,6 +24,9 @@ final class PuzzleViewModel {
     /// Whether the puzzle is completed.
     var isCompleted: Bool { gameState.isCompleted }
 
+    /// Set to `true` briefly when every cell is filled but the solution is wrong.
+    var showIncorrectMessage = false
+
     init(puzzle: PuzzleDefinition, gameState: GameState) {
         self.puzzle = puzzle
         self.gameState = gameState
@@ -172,6 +175,7 @@ final class PuzzleViewModel {
 
         gameState.activeDirection = nextWord.direction
         gameState.selectedCell = CellPosition(row: nextWord.startRow, col: nextWord.startCol)
+        focusFirstEmptyCell()
     }
 
     /// Move to the previous word in the puzzle.
@@ -191,6 +195,7 @@ final class PuzzleViewModel {
 
         gameState.activeDirection = prevWord.direction
         gameState.selectedCell = CellPosition(row: prevWord.startRow, col: prevWord.startCol)
+        focusFirstEmptyCell()
     }
 
     // MARK: - Private
@@ -229,10 +234,15 @@ final class PuzzleViewModel {
             }
         }
 
-        // If no empty cell after, just move to next cell
-        if currentIndex + 1 < wordCells.count {
-            gameState.selectedCell = wordCells[currentIndex + 1]
+        // No empty cells remaining in this word — auto-advance to next word
+        if isActiveWordFull {
+            selectNextWord()
         }
+    }
+
+    /// Whether every cell in the active word has a letter.
+    private var isActiveWordFull: Bool {
+        activeWordCells.allSatisfy { gameState.playerGrid[$0.row][$0.col] != nil }
     }
 
     private func moveToPreviousCell() {
@@ -242,12 +252,43 @@ final class PuzzleViewModel {
         gameState.selectedCell = wordCells[currentIndex - 1]
     }
 
+    /// Move focus to the first empty cell in the active word, if any.
+    private func focusFirstEmptyCell() {
+        let wordCells = activeWordCells
+        for pos in wordCells {
+            if gameState.playerGrid[pos.row][pos.col] == nil {
+                gameState.selectedCell = pos
+                return
+            }
+        }
+        // All cells filled — stay on the word start (already set by caller)
+    }
+
+    /// Whether every non-black cell has a letter (regardless of correctness).
+    private var isBoardFull: Bool {
+        let dim = puzzle.gridSize.dimension
+        for row in 0..<dim {
+            for col in 0..<dim {
+                if puzzle.solutionLetter(row: row, col: col) != nil {
+                    if gameState.playerGrid[row][col] == nil { return false }
+                }
+            }
+        }
+        return true
+    }
+
     private func checkCompletion() {
         let dim = puzzle.gridSize.dimension
         for row in 0..<dim {
             for col in 0..<dim {
                 if let solution = puzzle.solutionLetter(row: row, col: col) {
-                    guard gameState.playerGrid[row][col] == solution else { return }
+                    guard gameState.playerGrid[row][col] == solution else {
+                        // Not all correct — but if every cell is filled, alert the user
+                        if isBoardFull {
+                            showIncorrectMessage = true
+                        }
+                        return
+                    }
                 }
             }
         }
