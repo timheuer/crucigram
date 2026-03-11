@@ -1,0 +1,319 @@
+import SwiftUI
+
+struct HomeView: View {
+    @State private var puzzleVM: PuzzleViewModel?
+    @State private var navigateToPuzzle = false
+    @State private var stats = PersistenceService.shared.loadPlayerStats()
+    @State private var isGenerating = false
+    @State private var titleTapCount = 0
+    @State private var showOnboarding = false
+    @State private var showResumeAlert = false
+    @AppStorage("devModeEnabled") private var devModeEnabled = false
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+
+    private let dailyService = DailyPuzzleService()
+    private let generator = PuzzleGeneratorService()
+    private let persistence = PersistenceService.shared
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Title area
+                VStack(spacing: 8) {
+                    Text("Gridlet")
+                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .onTapGesture {
+                            titleTapCount += 1
+                            if titleTapCount >= 5 {
+                                devModeEnabled.toggle()
+                                titleTapCount = 0
+                            }
+                        }
+
+                    Text("Word Puzzle")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+                    .frame(height: 32)
+
+                // Streak — fixed height so it never shifts buttons
+                HStack(spacing: 4) {
+                    if stats.currentStreak > 0 {
+                        Image(systemName: "flame.fill")
+                        Text("\(stats.currentStreak) day streak")
+                    }
+                }
+                .font(.headline)
+                .foregroundStyle(.orange)
+                .frame(height: 28)
+
+                Spacer()
+                    .frame(height: 20)
+
+                // Buttons
+                VStack(spacing: 12) {
+                    Button {
+                        startDailyPuzzle()
+                    } label: {
+                        HStack {
+                            Image(systemName: "calendar")
+                            Text(dailyButtonLabel)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(isDailyCompleted || isGenerating)
+
+                    Button {
+                        handleUnlimitedTap()
+                    } label: {
+                        HStack {
+                            if isGenerating {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "play.fill")
+                            }
+                            Text(isGenerating ? "Generating..." : unlimitedButtonLabel)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(isGenerating)
+
+                    if devModeEnabled {
+                        Button {
+                            resetDaily()
+                        } label: {
+                            HStack {
+                                Image(systemName: "calendar.badge.minus")
+                                Text("Reset Daily")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .tint(.orange)
+
+                        Button {
+                            showOnboarding = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.counterclockwise")
+                                Text("Replay Onboarding")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .tint(.orange)
+                    }
+                }
+                .padding(.horizontal, 32)
+
+                Spacer()
+            }
+            .padding()
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if devModeEnabled {
+                        Button {
+                            devModeEnabled = false
+                        } label: {
+                            Label("Dev Mode", systemImage: "hammer.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 16) {
+                        NavigationLink {
+                            StatsView()
+                        } label: {
+                            Image(systemName: "chart.bar.fill")
+                        }
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                    }
+                }
+            }
+            .navigationDestination(isPresented: $navigateToPuzzle) {
+                if let vm = puzzleVM {
+                    PuzzleView(viewModel: vm)
+                        .onDisappear {
+                            handlePuzzleReturn()
+                        }
+                }
+            }
+            .onAppear {
+                refreshStats()
+            }
+            .fullScreenCover(isPresented: $showOnboarding) {
+                OnboardingView()
+            }
+            .alert("Resume Puzzle?", isPresented: $showResumeAlert) {
+                Button("Resume") { resumeUnlimitedPuzzle() }
+                Button("New Puzzle", role: .destructive) { startNewUnlimitedPuzzle() }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("You have an unfinished puzzle. Would you like to continue where you left off?")
+            }
+            .onAppear {
+                if !hasSeenOnboarding {
+                    showOnboarding = true
+                    hasSeenOnboarding = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Daily Puzzle
+
+    private var isDailyCompleted: Bool {
+        stats.lastDailyCompletedDate == PlayerStats.todayString()
+    }
+
+    private var dailyButtonLabel: String {
+        if isDailyCompleted {
+            return "Daily Complete ✓"
+        }
+        if persistence.loadDailyGameState() != nil {
+            return "Resume Daily"
+        }
+        return "Daily Puzzle"
+    }
+
+    private func startDailyPuzzle() {
+        isGenerating = true
+
+        Task {
+            let puzzle = await dailyService.todaysPuzzle()
+
+            let gameState: GameState
+            if let saved = persistence.loadDailyGameState(), saved.puzzleId == puzzle.id {
+                gameState = saved
+            } else {
+                gameState = GameState(puzzleId: puzzle.id, isDaily: true, gridSize: puzzle.gridSize)
+            }
+
+            await MainActor.run {
+                puzzleVM = PuzzleViewModel(puzzle: puzzle, gameState: gameState)
+                puzzleVM?.devMode = devModeEnabled
+                isGenerating = false
+                navigateToPuzzle = true
+            }
+        }
+    }
+
+    // MARK: - Unlimited Puzzle
+
+    private var hasUnlimitedInProgress: Bool {
+        persistence.loadUnlimitedGameState() != nil && persistence.loadUnlimitedPuzzle() != nil
+    }
+
+    private var unlimitedButtonLabel: String {
+        hasUnlimitedInProgress ? "Resume Play" : "Play"
+    }
+
+    private func handleUnlimitedTap() {
+        if hasUnlimitedInProgress {
+            showResumeAlert = true
+        } else {
+            startNewUnlimitedPuzzle()
+        }
+    }
+
+    private func resumeUnlimitedPuzzle() {
+        guard let puzzle = persistence.loadUnlimitedPuzzle(),
+              let savedState = persistence.loadUnlimitedGameState(),
+              savedState.puzzleId == puzzle.id else {
+            startNewUnlimitedPuzzle()
+            return
+        }
+
+        puzzleVM = PuzzleViewModel(puzzle: puzzle, gameState: savedState)
+        puzzleVM?.devMode = devModeEnabled
+        navigateToPuzzle = true
+    }
+
+    private func startNewUnlimitedPuzzle() {
+        // Clear any saved unlimited state
+        persistence.clearUnlimitedGameState()
+        persistence.clearUnlimitedPuzzle()
+
+        let seed = UInt64.random(in: 0...UInt64.max)
+        isGenerating = true
+
+        Task {
+            let puzzle = await generator.generateWithAI(seed: seed)
+            let gameState = GameState(puzzleId: puzzle.id, isDaily: false, gridSize: puzzle.gridSize)
+
+            // Save puzzle so we can resume later
+            try? persistence.saveUnlimitedPuzzle(puzzle)
+
+            await MainActor.run {
+                puzzleVM = PuzzleViewModel(puzzle: puzzle, gameState: gameState)
+                puzzleVM?.devMode = devModeEnabled
+                isGenerating = false
+                navigateToPuzzle = true
+            }
+        }
+    }
+
+    // MARK: - Return from puzzle
+
+    private func handlePuzzleReturn() {
+        guard let vm = puzzleVM, vm.isCompleted else {
+            refreshStats()
+            return
+        }
+
+        let record = CompletionRecord(
+            puzzleId: vm.gameState.puzzleId,
+            elapsedSeconds: vm.gameState.elapsedSeconds,
+            gridSize: vm.puzzle.gridSize,
+            checksUsed: vm.gameState.checksUsed,
+            isDaily: vm.gameState.isDaily
+        )
+
+        if vm.gameState.isDaily {
+            stats.recordDailyCompletion(record: record)
+            persistence.clearDailyGameState()
+        } else {
+            stats.recordUnlimitedCompletion(record: record)
+            persistence.clearUnlimitedGameState()
+            persistence.clearUnlimitedPuzzle()
+        }
+
+        try? persistence.savePlayerStats(stats)
+        puzzleVM = nil
+    }
+
+    private func refreshStats() {
+        stats = persistence.loadPlayerStats()
+        stats.validateStreak()
+    }
+
+    // MARK: - Dev Mode Actions
+
+    private func resetDaily() {
+        persistence.clearDailyGameState()
+        stats.lastDailyCompletedDate = nil
+        try? persistence.savePlayerStats(stats)
+        refreshStats()
+    }
+}
+
+#Preview {
+    HomeView()
+}

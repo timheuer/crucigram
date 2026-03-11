@@ -1,0 +1,612 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		14A695E40AB55402732103B8 /* GridSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB7DE92A992B47B61ED5C15 /* GridSize.swift */; };
+		199F586F9E8B1B9E60889F54 /* AcknowledgmentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E311F74BA6D26C76D5D9ED8 /* AcknowledgmentsView.swift */; };
+		1B241B3AE4A31796856042B2 /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C40CE59F94B6EE08C2DA47A /* KeyboardView.swift */; };
+		21BDCB4B2C20299F830A81DA /* DailyPuzzleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309D293C6511815873AF8A4F /* DailyPuzzleService.swift */; };
+		33D51BDC08C1E81FBEADEBF7 /* ClueBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E21ADC063FDAA8EB7CC5BB9 /* ClueBarView.swift */; };
+		34EDD70E77C6030008185948 /* PuzzleGeneratorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB4EBBEB4C3786D5AC846822 /* PuzzleGeneratorService.swift */; };
+		46D4B2DB186DABA26D47334E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AD19E015D08F2CDECF80B0AF /* Assets.xcassets */; };
+		4CD1A81AE38E777130ABC3D9 /* CellDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFD0ED06DF51A537DB5F94A6 /* CellDefinition.swift */; };
+		51267A9A796F87BCB05441C5 /* wordlist.json in Resources */ = {isa = PBXBuildFile; fileRef = 2C2A033EE69D05E8FD469C70 /* wordlist.json */; };
+		54673FE5AC822AA9E358F9B9 /* PuzzleDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564B546B248442B17AFA0AE7 /* PuzzleDefinition.swift */; };
+		56FB375B93DCF7D004255232 /* WordDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F92BC27609AE89A5E14901F /* WordDirection.swift */; };
+		5F7DB57736EBB1BD58C6111F /* PlayerStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34980EE859472FF563BE6361 /* PlayerStats.swift */; };
+		6AA07A78926D7E6F5D05C3F4 /* WordEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34BC11F9C08AD117279993E /* WordEntry.swift */; };
+		7AC5135628F4395FDEDF65AF /* WordListService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C669B10D072EC70CDD1F8A /* WordListService.swift */; };
+		7D040D80135493A8203B5023 /* GridletApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C86EE0E04FB9278E6F6901F /* GridletApp.swift */; };
+		875CC4A28990852697F9CD05 /* GridDensityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701B4F0FB8505CCBAFC05DA5 /* GridDensityTests.swift */; };
+		8CBD1041916971ACF0AB743E /* GeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEE1B9C182A04B27356A06F3 /* GeneratorTests.swift */; };
+		93981B2A6A7BE3DE00B4976A /* DevInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06E91B48F824BF1EC785209 /* DevInfoView.swift */; };
+		9487AD2E1E5E56C7394A329D /* GridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E984CC505A6561010A8EDC /* GridView.swift */; };
+		A22BD57A473F3F86190F357D /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E057B13461FC75EF2DFA0F68 /* GameState.swift */; };
+		A47BCE313BE79B99F1592D5D /* PersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFBA874EDADDD03362CAEC06 /* PersistenceService.swift */; };
+		A6FEE118B21D16DE9FDDA18F /* ModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8056BE2FDC3E348EF003E8 /* ModelTests.swift */; };
+		B86074B2C930FCC7E7F71C26 /* AIWordService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2391CB3F5500032E9FEBBDA0 /* AIWordService.swift */; };
+		BA92BE3665EEAA686FC0A28B /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63177488FB00E86FE4EFE9BE /* OnboardingView.swift */; };
+		CD44C21480F3C04532704217 /* PuzzleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B064C6AD304DF207E398857 /* PuzzleView.swift */; };
+		DB809BDA137769BE0AC8AB0F /* StatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF78CAF734920240D2A8AC2F /* StatsViewModel.swift */; };
+		E06D0713E2127B0B6308CCA7 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A9F1EFA3F3DB2B9CD4F1C7 /* StatsView.swift */; };
+		E8EF1A8D967B163D3E4A31E5 /* PuzzleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEA389D36B5684F8A5CF568 /* PuzzleViewModel.swift */; };
+		EAB96DA7BEA7BCDEFB46E192 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2744A629CDF53D2FB542946 /* SettingsView.swift */; };
+		EAD2E0268F07BE735E7A9FD9 /* GridCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200DCC008696A9AF9A34776 /* GridCellView.swift */; };
+		F5F35CC7C94943622262CC29 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8A191A49BF521FF25D7D61 /* HomeView.swift */; };
+		F6D46B24808EFC99207DD431 /* CrosswordLayoutGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A2DA0A57C5C1715A3C9F2C /* CrosswordLayoutGenerator.swift */; };
+		FEC1881DACAAAE1DEEC51120 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 166D18C0ED3657327C3118A3 /* PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4F203E9D574B3F8B0068698B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C866FB34152B7949C613B7CC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5466E293C972D3A0B6CCFC90;
+			remoteInfo = Gridlet;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0C86EE0E04FB9278E6F6901F /* GridletApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridletApp.swift; sourceTree = "<group>"; };
+		0F92BC27609AE89A5E14901F /* WordDirection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDirection.swift; sourceTree = "<group>"; };
+		166D18C0ED3657327C3118A3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2391CB3F5500032E9FEBBDA0 /* AIWordService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWordService.swift; sourceTree = "<group>"; };
+		2B064C6AD304DF207E398857 /* PuzzleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PuzzleView.swift; sourceTree = "<group>"; };
+		2B8A191A49BF521FF25D7D61 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		2C2A033EE69D05E8FD469C70 /* wordlist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = wordlist.json; sourceTree = "<group>"; };
+		309D293C6511815873AF8A4F /* DailyPuzzleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPuzzleService.swift; sourceTree = "<group>"; };
+		34980EE859472FF563BE6361 /* PlayerStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStats.swift; sourceTree = "<group>"; };
+		36C669B10D072EC70CDD1F8A /* WordListService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordListService.swift; sourceTree = "<group>"; };
+		3CC95EEFDD1951C6ECB19DEB /* GridletTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GridletTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3DEA389D36B5684F8A5CF568 /* PuzzleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PuzzleViewModel.swift; sourceTree = "<group>"; };
+		4E21ADC063FDAA8EB7CC5BB9 /* ClueBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClueBarView.swift; sourceTree = "<group>"; };
+		564B546B248442B17AFA0AE7 /* PuzzleDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PuzzleDefinition.swift; sourceTree = "<group>"; };
+		62848D5EB9078B15E20F75D4 /* Gridlet.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Gridlet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		63177488FB00E86FE4EFE9BE /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		701B4F0FB8505CCBAFC05DA5 /* GridDensityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridDensityTests.swift; sourceTree = "<group>"; };
+		7EB7DE92A992B47B61ED5C15 /* GridSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridSize.swift; sourceTree = "<group>"; };
+		8C40CE59F94B6EE08C2DA47A /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
+		96A9F1EFA3F3DB2B9CD4F1C7 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		9E311F74BA6D26C76D5D9ED8 /* AcknowledgmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgmentsView.swift; sourceTree = "<group>"; };
+		A1E984CC505A6561010A8EDC /* GridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridView.swift; sourceTree = "<group>"; };
+		AB4EBBEB4C3786D5AC846822 /* PuzzleGeneratorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PuzzleGeneratorService.swift; sourceTree = "<group>"; };
+		AD19E015D08F2CDECF80B0AF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B06E91B48F824BF1EC785209 /* DevInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevInfoView.swift; sourceTree = "<group>"; };
+		B200DCC008696A9AF9A34776 /* GridCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridCellView.swift; sourceTree = "<group>"; };
+		BB8056BE2FDC3E348EF003E8 /* ModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelTests.swift; sourceTree = "<group>"; };
+		BF78CAF734920240D2A8AC2F /* StatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsViewModel.swift; sourceTree = "<group>"; };
+		C2744A629CDF53D2FB542946 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C34BC11F9C08AD117279993E /* WordEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordEntry.swift; sourceTree = "<group>"; };
+		CFBA874EDADDD03362CAEC06 /* PersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceService.swift; sourceTree = "<group>"; };
+		DFD0ED06DF51A537DB5F94A6 /* CellDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellDefinition.swift; sourceTree = "<group>"; };
+		E057B13461FC75EF2DFA0F68 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		F8A2DA0A57C5C1715A3C9F2C /* CrosswordLayoutGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrosswordLayoutGenerator.swift; sourceTree = "<group>"; };
+		FEE1B9C182A04B27356A06F3 /* GeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratorTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		06A3FCA6E30DDE68B4630639 /* Gridlet */ = {
+			isa = PBXGroup;
+			children = (
+				E7E2303D5F5598445D25692D /* Resources */,
+				91A98F9C3C070373A960970D /* Sources */,
+			);
+			path = Gridlet;
+			sourceTree = "<group>";
+		};
+		48FE833152FFC72CEFA49D2F /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DFD0ED06DF51A537DB5F94A6 /* CellDefinition.swift */,
+				E057B13461FC75EF2DFA0F68 /* GameState.swift */,
+				7EB7DE92A992B47B61ED5C15 /* GridSize.swift */,
+				34980EE859472FF563BE6361 /* PlayerStats.swift */,
+				564B546B248442B17AFA0AE7 /* PuzzleDefinition.swift */,
+				0F92BC27609AE89A5E14901F /* WordDirection.swift */,
+				C34BC11F9C08AD117279993E /* WordEntry.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4BD70C1EAE7E84FF8309768D /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				2391CB3F5500032E9FEBBDA0 /* AIWordService.swift */,
+				309D293C6511815873AF8A4F /* DailyPuzzleService.swift */,
+				CFBA874EDADDD03362CAEC06 /* PersistenceService.swift */,
+				AB4EBBEB4C3786D5AC846822 /* PuzzleGeneratorService.swift */,
+				36C669B10D072EC70CDD1F8A /* WordListService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		6A94E2E9624A1AFB8DF90488 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				3DEA389D36B5684F8A5CF568 /* PuzzleViewModel.swift */,
+				BF78CAF734920240D2A8AC2F /* StatsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		83B97BE5C0FF0B5A7A7B410F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				9E311F74BA6D26C76D5D9ED8 /* AcknowledgmentsView.swift */,
+				2B8A191A49BF521FF25D7D61 /* HomeView.swift */,
+				63177488FB00E86FE4EFE9BE /* OnboardingView.swift */,
+				2B064C6AD304DF207E398857 /* PuzzleView.swift */,
+				C2744A629CDF53D2FB542946 /* SettingsView.swift */,
+				96A9F1EFA3F3DB2B9CD4F1C7 /* StatsView.swift */,
+				C06D6A1DC9EDA7341E3F6C44 /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		887168B3C48081746CE33DAF /* Generator */ = {
+			isa = PBXGroup;
+			children = (
+				F8A2DA0A57C5C1715A3C9F2C /* CrosswordLayoutGenerator.swift */,
+			);
+			path = Generator;
+			sourceTree = "<group>";
+		};
+		91A98F9C3C070373A960970D /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				0C86EE0E04FB9278E6F6901F /* GridletApp.swift */,
+				887168B3C48081746CE33DAF /* Generator */,
+				48FE833152FFC72CEFA49D2F /* Models */,
+				4BD70C1EAE7E84FF8309768D /* Services */,
+				6A94E2E9624A1AFB8DF90488 /* ViewModels */,
+				83B97BE5C0FF0B5A7A7B410F /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		91C772EDFCBAE8547E3D24ED /* GridletTests */ = {
+			isa = PBXGroup;
+			children = (
+				FEE1B9C182A04B27356A06F3 /* GeneratorTests.swift */,
+				701B4F0FB8505CCBAFC05DA5 /* GridDensityTests.swift */,
+				BB8056BE2FDC3E348EF003E8 /* ModelTests.swift */,
+			);
+			path = GridletTests;
+			sourceTree = "<group>";
+		};
+		C06D6A1DC9EDA7341E3F6C44 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				4E21ADC063FDAA8EB7CC5BB9 /* ClueBarView.swift */,
+				B06E91B48F824BF1EC785209 /* DevInfoView.swift */,
+				B200DCC008696A9AF9A34776 /* GridCellView.swift */,
+				A1E984CC505A6561010A8EDC /* GridView.swift */,
+				8C40CE59F94B6EE08C2DA47A /* KeyboardView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		E7E2303D5F5598445D25692D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AD19E015D08F2CDECF80B0AF /* Assets.xcassets */,
+				166D18C0ED3657327C3118A3 /* PrivacyInfo.xcprivacy */,
+				2C2A033EE69D05E8FD469C70 /* wordlist.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		F467F58CFB304529B58EC90D = {
+			isa = PBXGroup;
+			children = (
+				06A3FCA6E30DDE68B4630639 /* Gridlet */,
+				91C772EDFCBAE8547E3D24ED /* GridletTests */,
+				F6FBF0ED853F27BE4C733DDF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F6FBF0ED853F27BE4C733DDF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				62848D5EB9078B15E20F75D4 /* Gridlet.app */,
+				3CC95EEFDD1951C6ECB19DEB /* GridletTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		307E0D6D022B9716A477F4E3 /* GridletTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 495D70A49AF97FC7A2E74E0D /* Build configuration list for PBXNativeTarget "GridletTests" */;
+			buildPhases = (
+				1A96821215F4F076A3817276 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8E9422721649308C3A044C36 /* PBXTargetDependency */,
+			);
+			name = GridletTests;
+			packageProductDependencies = (
+			);
+			productName = GridletTests;
+			productReference = 3CC95EEFDD1951C6ECB19DEB /* GridletTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5466E293C972D3A0B6CCFC90 /* Gridlet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AADB82EB31BCC63934213758 /* Build configuration list for PBXNativeTarget "Gridlet" */;
+			buildPhases = (
+				1767A2D1A060233C8F58C6B7 /* Sources */,
+				E8D43F5DAC81A9D995E0540C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Gridlet;
+			packageProductDependencies = (
+			);
+			productName = Gridlet;
+			productReference = 62848D5EB9078B15E20F75D4 /* Gridlet.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C866FB34152B7949C613B7CC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					307E0D6D022B9716A477F4E3 = {
+						DevelopmentTeam = 26G346D9H7;
+					};
+					5466E293C972D3A0B6CCFC90 = {
+						DevelopmentTeam = 26G346D9H7;
+					};
+				};
+			};
+			buildConfigurationList = EC20604370B78E08A651FA9B /* Build configuration list for PBXProject "Gridlet" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F467F58CFB304529B58EC90D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5466E293C972D3A0B6CCFC90 /* Gridlet */,
+				307E0D6D022B9716A477F4E3 /* GridletTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E8D43F5DAC81A9D995E0540C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				46D4B2DB186DABA26D47334E /* Assets.xcassets in Resources */,
+				FEC1881DACAAAE1DEEC51120 /* PrivacyInfo.xcprivacy in Resources */,
+				51267A9A796F87BCB05441C5 /* wordlist.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1767A2D1A060233C8F58C6B7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B86074B2C930FCC7E7F71C26 /* AIWordService.swift in Sources */,
+				199F586F9E8B1B9E60889F54 /* AcknowledgmentsView.swift in Sources */,
+				4CD1A81AE38E777130ABC3D9 /* CellDefinition.swift in Sources */,
+				33D51BDC08C1E81FBEADEBF7 /* ClueBarView.swift in Sources */,
+				F6D46B24808EFC99207DD431 /* CrosswordLayoutGenerator.swift in Sources */,
+				21BDCB4B2C20299F830A81DA /* DailyPuzzleService.swift in Sources */,
+				93981B2A6A7BE3DE00B4976A /* DevInfoView.swift in Sources */,
+				A22BD57A473F3F86190F357D /* GameState.swift in Sources */,
+				EAD2E0268F07BE735E7A9FD9 /* GridCellView.swift in Sources */,
+				14A695E40AB55402732103B8 /* GridSize.swift in Sources */,
+				9487AD2E1E5E56C7394A329D /* GridView.swift in Sources */,
+				7D040D80135493A8203B5023 /* GridletApp.swift in Sources */,
+				F5F35CC7C94943622262CC29 /* HomeView.swift in Sources */,
+				1B241B3AE4A31796856042B2 /* KeyboardView.swift in Sources */,
+				BA92BE3665EEAA686FC0A28B /* OnboardingView.swift in Sources */,
+				A47BCE313BE79B99F1592D5D /* PersistenceService.swift in Sources */,
+				5F7DB57736EBB1BD58C6111F /* PlayerStats.swift in Sources */,
+				54673FE5AC822AA9E358F9B9 /* PuzzleDefinition.swift in Sources */,
+				34EDD70E77C6030008185948 /* PuzzleGeneratorService.swift in Sources */,
+				CD44C21480F3C04532704217 /* PuzzleView.swift in Sources */,
+				E8EF1A8D967B163D3E4A31E5 /* PuzzleViewModel.swift in Sources */,
+				EAB96DA7BEA7BCDEFB46E192 /* SettingsView.swift in Sources */,
+				E06D0713E2127B0B6308CCA7 /* StatsView.swift in Sources */,
+				DB809BDA137769BE0AC8AB0F /* StatsViewModel.swift in Sources */,
+				56FB375B93DCF7D004255232 /* WordDirection.swift in Sources */,
+				6AA07A78926D7E6F5D05C3F4 /* WordEntry.swift in Sources */,
+				7AC5135628F4395FDEDF65AF /* WordListService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A96821215F4F076A3817276 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8CBD1041916971ACF0AB743E /* GeneratorTests.swift in Sources */,
+				875CC4A28990852697F9CD05 /* GridDensityTests.swift in Sources */,
+				A6FEE118B21D16DE9FDDA18F /* ModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8E9422721649308C3A044C36 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5466E293C972D3A0B6CCFC90 /* Gridlet */;
+			targetProxy = 4F203E9D574B3F8B0068698B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		41CD57561F16A0A26C01DE44 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timheuer.gridlet.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gridlet.app/Gridlet";
+			};
+			name = Debug;
+		};
+		46BEEF0A524759CBD0BC7274 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timheuer.gridlet.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gridlet.app/Gridlet";
+			};
+			name = Release;
+		};
+		8FC9B78269546A62CA085041 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_CFBundleDisplayName = "Gridlet: Daily Crosswords";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.puzzle-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportsDocumentBrowser = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timheuer.gridlet;
+				SDKROOT = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E645572DC9DCDFA9BAD0308F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 26G346D9H7;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		E8DF79F2C459910759F9AD62 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_CFBundleDisplayName = "Gridlet: Daily Crosswords";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.puzzle-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportsDocumentBrowser = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timheuer.gridlet;
+				SDKROOT = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		FD02754EAB49A85839C86FF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 26G346D9H7;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		495D70A49AF97FC7A2E74E0D /* Build configuration list for PBXNativeTarget "GridletTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				41CD57561F16A0A26C01DE44 /* Debug */,
+				46BEEF0A524759CBD0BC7274 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AADB82EB31BCC63934213758 /* Build configuration list for PBXNativeTarget "Gridlet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E8DF79F2C459910759F9AD62 /* Debug */,
+				8FC9B78269546A62CA085041 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EC20604370B78E08A651FA9B /* Build configuration list for PBXProject "Gridlet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD02754EAB49A85839C86FF8 /* Debug */,
+				E645572DC9DCDFA9BAD0308F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C866FB34152B7949C613B7CC /* Project object */;
+}
