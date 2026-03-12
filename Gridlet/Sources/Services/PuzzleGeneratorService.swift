@@ -6,6 +6,9 @@ import CryptoKit
 /// Uses Apple Intelligence for word/clue generation when available,
 /// falls back to the bundled word list.
 final class PuzzleGeneratorService: @unchecked Sendable {
+    /// Golden-ratio stride used to deterministically perturb layout seeds across retries.
+    private static let layoutSeedStride: UInt64 = 0x9E3779B97F4A7C15
+    private static let maxLayoutSeedAttempts = 8
 
     private let wordListService: WordListService
     private let aiWordService: AIWordService
@@ -65,8 +68,8 @@ final class PuzzleGeneratorService: @unchecked Sendable {
         var bestGrid: [[Character?]] = []
         var bestFilledCells = -1
 
-        for offset in 0..<8 {
-            let layoutSeed = seed &+ (UInt64(offset) &* 0x9E3779B97F4A7C15)
+        for attemptIndex in 0..<Self.maxLayoutSeedAttempts {
+            let layoutSeed = seed &+ (UInt64(attemptIndex) &* Self.layoutSeedStride)
             let generator = CrosswordLayoutGenerator(columns: dim, rows: dim, seed: layoutSeed)
             generator.generate(words: words, minimumWordCount: minimumWords)
 
@@ -81,7 +84,9 @@ final class PuzzleGeneratorService: @unchecked Sendable {
                 bestFilledCells = filledCells
             }
 
-            if bestPlaced.count >= minimumWords && Double(bestFilledCells) / Double(dim * dim) >= 0.6 {
+            let bestDensity = Double(bestFilledCells) / Double(dim * dim)
+            if bestPlaced.count >= minimumWords &&
+                bestDensity >= CrosswordLayoutGenerator.targetDensityThreshold {
                 break
             }
         }

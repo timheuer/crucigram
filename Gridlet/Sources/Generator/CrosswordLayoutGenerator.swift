@@ -8,6 +8,10 @@ import GameplayKit
 /// A crossword grid generator optimized for small (5×5, 6×6) grids
 /// with seeded random number generation for deterministic puzzles.
 final class CrosswordLayoutGenerator {
+    /// Small mobile grids feel sparse below ~60% fill, but higher targets make it much harder
+    /// for the search to find a valid layout that can still place enough intersecting words.
+    static let targetDensityThreshold = 0.6
+    private static let maxLayoutAttempts = 60
 
     struct PlacedWord {
         let word: String
@@ -44,15 +48,15 @@ final class CrosswordLayoutGenerator {
         var bestGrid: [[String]] = []
         var bestFilledCells = -1
         let overlapScores = buildOverlapScores(for: candidates)
-        let attempts = 60  // try many orderings to maximize placed words in small grids
+        let attempts = Self.maxLayoutAttempts
 
-        for attempt in 0..<attempts {
+        for attemptIndex in 0..<attempts {
             // Reset grid
             grid = Array(repeating: Array(repeating: emptySymbol, count: columns), count: rows)
             currentWords.removeAll()
             var placed: [PlacedWord] = []
 
-            let shuffled = orderedWords(for: candidates, overlapScores: overlapScores, attempt: attempt)
+            let shuffled = orderedWords(for: candidates, overlapScores: overlapScores, attempt: attemptIndex)
 
             // Place words
             for word in shuffled {
@@ -85,7 +89,7 @@ final class CrosswordLayoutGenerator {
             // and a healthy fill ratio for these small grids.
             let totalCells = columns * rows
             let density = Double(filledCells) / Double(totalCells)
-            if placed.count >= minimumWordCount && density >= 0.6 {
+            if placed.count >= minimumWordCount && density >= Self.targetDensityThreshold {
                 break
             }
         }
@@ -96,16 +100,14 @@ final class CrosswordLayoutGenerator {
 
     private func buildOverlapScores(for words: [String]) -> [String: Int] {
         var scores: [String: Int] = [:]
+        let letterSets = Dictionary(uniqueKeysWithValues: words.map { ($0, Set($0)) })
 
         for word in words {
-            let uniqueLetters = Set(word)
+            let uniqueLetters = letterSets[word]!
             let score = words.reduce(into: 0) { partialResult, candidate in
                 guard candidate != word else { return }
-                partialResult += uniqueLetters.reduce(into: 0) { matches, letter in
-                    if candidate.contains(letter) {
-                        matches += 1
-                    }
-                }
+                let candidateLetters = letterSets[candidate]!
+                partialResult += uniqueLetters.intersection(candidateLetters).count
             }
             scores[word] = score
         }
@@ -117,8 +119,12 @@ final class CrosswordLayoutGenerator {
         var ordered = candidates
         ordered.shuffle(using: &rng)
 
+        // Rotate through length-first, overlap-first, and short-first orderings
+        // so each layout attempt explores a meaningfully different packing strategy.
         switch attempt % 3 {
         case 0:
+            // Start with longer words to build a central spine, then prefer words
+            // with lots of shared letters so later placements can intersect cleanly.
             ordered.sort { lhs, rhs in
                 if lhs.count != rhs.count {
                     return lhs.count > rhs.count
@@ -126,6 +132,8 @@ final class CrosswordLayoutGenerator {
                 return overlapScores[lhs, default: 0] > overlapScores[rhs, default: 0]
             }
         case 1:
+            // Favor high-overlap words even if they are shorter; this tends to
+            // unlock extra placements once the grid already has a few anchors.
             ordered.sort { lhs, rhs in
                 let lhsScore = overlapScores[lhs, default: 0]
                 let rhsScore = overlapScores[rhs, default: 0]
@@ -135,6 +143,8 @@ final class CrosswordLayoutGenerator {
                 return lhs.count < rhs.count
             }
         default:
+            // Start from shorter words to squeeze more entries into the same
+            // footprint, using overlap score as the secondary tiebreaker.
             ordered.sort { lhs, rhs in
                 if lhs.count != rhs.count {
                     return lhs.count < rhs.count
