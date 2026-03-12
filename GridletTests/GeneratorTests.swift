@@ -41,12 +41,12 @@ struct GeneratorTests {
 
     @Test("Different seeds produce different layouts")
     func differentSeeds() {
-        let words = ["HELLO", "WORLD", "HELP", "LONG", "OLD", "POLE", "HOLE"]
+        let words = ["HELLO", "WORLD", "HELP", "LONG", "OLD", "POLE", "HOLE", "LOWER", "PROWL"]
 
-        let gen1 = CrosswordLayoutGenerator(columns: 6, rows: 6, seed: 100)
+        let gen1 = CrosswordLayoutGenerator(columns: 6, rows: 6, seed: 1)
         gen1.generate(words: words)
 
-        let gen2 = CrosswordLayoutGenerator(columns: 6, rows: 6, seed: 999)
+        let gen2 = CrosswordLayoutGenerator(columns: 6, rows: 6, seed: 54321)
         gen2.generate(words: words)
 
         // Very unlikely to be identical with different seeds

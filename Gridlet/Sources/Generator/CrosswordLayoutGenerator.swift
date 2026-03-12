@@ -25,6 +25,8 @@ final class CrosswordLayoutGenerator {
     private var rng: GKMersenneTwisterRandomSource
 
     private var grid: [[String]]
+    /// Tracks which direction(s) occupy each cell to prevent same-direction overlaps.
+    private var directionGrid: [[Set<WordDirection>]]
     private var currentWords: [String] = []
     private(set) var result: [PlacedWord] = []
 
@@ -35,6 +37,7 @@ final class CrosswordLayoutGenerator {
         self.rows = rows
         self.rng = GKMersenneTwisterRandomSource(seed: seed)
         self.grid = Array(repeating: Array(repeating: "-", count: columns), count: rows)
+        self.directionGrid = Array(repeating: Array(repeating: Set<WordDirection>(), count: columns), count: rows)
     }
 
     /// Generate a crossword layout from the given words.
@@ -53,6 +56,7 @@ final class CrosswordLayoutGenerator {
         for attemptIndex in 0..<attempts {
             // Reset grid
             grid = Array(repeating: Array(repeating: emptySymbol, count: columns), count: rows)
+            directionGrid = Array(repeating: Array(repeating: Set<WordDirection>(), count: columns), count: rows)
             currentWords.removeAll()
             var placed: [PlacedWord] = []
 
@@ -285,7 +289,12 @@ final class CrosswordLayoutGenerator {
             let cell = getCell(column: c, row: r)
 
             if cell == letterStr {
-                // Intersection — this is great
+                // Reject if this cell is already used by a word in the same direction
+                // (e.g., two down words sharing the same column cells)
+                if directionGrid[r - 1][c - 1].contains(direction) {
+                    return 0
+                }
+                // Valid intersection with a perpendicular word
                 score += 1
                 hasIntersection = true
             } else if cell == emptySymbol {
@@ -314,6 +323,7 @@ final class CrosswordLayoutGenerator {
         var r = row
         for letter in word {
             setCell(column: c, row: r, value: String(letter))
+            directionGrid[r - 1][c - 1].insert(direction)
             if direction == .across { c += 1 } else { r += 1 }
         }
     }
