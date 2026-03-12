@@ -12,6 +12,9 @@ struct GridCellView: View {
   let isWrong: Bool
   let number: Int?
   let showSolution: Bool
+  let accessibilityLabel: String
+  let accessibilityValue: String?
+  let accessibilityHint: String?
 
   var body: some View {
     ZStack(alignment: .topLeading) {
@@ -54,21 +57,9 @@ struct GridCellView: View {
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(accessibilityLabel)
+    .accessibilityValue(accessibilityValue ?? "")
+    .accessibilityHint(accessibilityHint ?? "")
     .accessibilityAddTraits(isBlack ? [] : .isButton)
-  }
-
-  private var accessibilityLabel: String {
-    if isBlack { return "Black cell" }
-    var parts: [String] = ["Row \(row + 1), Column \(col + 1)"]
-    if let number = number { parts.append("Number \(number)") }
-    if let letter = letter {
-      parts.append("Letter \(letter)")
-      if isWrong { parts.append("incorrect") }
-    } else {
-      parts.append("Empty")
-    }
-    if isSelected { parts.append("selected") }
-    return parts.joined(separator: ", ")
   }
 
   private var backgroundColor: Color {
