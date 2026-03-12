@@ -35,27 +35,24 @@ final class CrosswordLayoutGenerator {
 
     /// Generate a crossword layout from the given words.
     /// Runs multiple full attempts with different word orderings and keeps the densest result.
-    func generate(words: [String]) {
+    func generate(words: [String], minimumWordCount: Int = 0) {
         let candidates = words
             .map { $0.uppercased() }
             .filter { $0.count <= max(columns, rows) && $0.count >= 2 }
 
         var bestPlaced: [PlacedWord] = []
         var bestGrid: [[String]] = []
-        let attempts = 30  // try many random orderings
+        var bestFilledCells = -1
+        let overlapScores = buildOverlapScores(for: candidates)
+        let attempts = 60  // try many orderings to maximize placed words in small grids
 
-        for _ in 0..<attempts {
+        for attempt in 0..<attempts {
             // Reset grid
             grid = Array(repeating: Array(repeating: emptySymbol, count: columns), count: rows)
             currentWords.removeAll()
             var placed: [PlacedWord] = []
 
-            // Shuffle words for this attempt
-            var shuffled = candidates
-            shuffled.shuffle(using: &rng)
-
-            // Sort by length descending, but with some randomness in equal-length groups
-            shuffled.sort { $0.count > $1.count }
+            let shuffled = orderedWords(for: candidates, overlapScores: overlapScores, attempt: attempt)
 
             // Place words
             for word in shuffled {
@@ -77,21 +74,76 @@ final class CrosswordLayoutGenerator {
                 }
             }
 
-            if placed.count > bestPlaced.count {
+            let filledCells = grid.flatMap { $0 }.filter { $0 != emptySymbol }.count
+            if placed.count > bestPlaced.count || (placed.count == bestPlaced.count && filledCells > bestFilledCells) {
                 bestPlaced = placed
                 bestGrid = grid
+                bestFilledCells = filledCells
             }
 
-            // Good enough threshold for small grids
-            let filledCells = grid.flatMap { $0 }.filter { $0 != emptySymbol }.count
+            // Keep searching until the layout hits the requested word count
+            // and a healthy fill ratio for these small grids.
             let totalCells = columns * rows
-            if Double(filledCells) / Double(totalCells) >= 0.5 {
+            let density = Double(filledCells) / Double(totalCells)
+            if placed.count >= minimumWordCount && density >= 0.6 {
                 break
             }
         }
 
         result = bestPlaced
         grid = bestGrid
+    }
+
+    private func buildOverlapScores(for words: [String]) -> [String: Int] {
+        var scores: [String: Int] = [:]
+
+        for word in words {
+            let uniqueLetters = Set(word)
+            let score = words.reduce(into: 0) { partialResult, candidate in
+                guard candidate != word else { return }
+                partialResult += uniqueLetters.reduce(into: 0) { matches, letter in
+                    if candidate.contains(letter) {
+                        matches += 1
+                    }
+                }
+            }
+            scores[word] = score
+        }
+
+        return scores
+    }
+
+    private func orderedWords(for candidates: [String], overlapScores: [String: Int], attempt: Int) -> [String] {
+        var ordered = candidates
+        ordered.shuffle(using: &rng)
+
+        switch attempt % 3 {
+        case 0:
+            ordered.sort { lhs, rhs in
+                if lhs.count != rhs.count {
+                    return lhs.count > rhs.count
+                }
+                return overlapScores[lhs, default: 0] > overlapScores[rhs, default: 0]
+            }
+        case 1:
+            ordered.sort { lhs, rhs in
+                let lhsScore = overlapScores[lhs, default: 0]
+                let rhsScore = overlapScores[rhs, default: 0]
+                if lhsScore != rhsScore {
+                    return lhsScore > rhsScore
+                }
+                return lhs.count < rhs.count
+            }
+        default:
+            ordered.sort { lhs, rhs in
+                if lhs.count != rhs.count {
+                    return lhs.count < rhs.count
+                }
+                return overlapScores[lhs, default: 0] > overlapScores[rhs, default: 0]
+            }
+        }
+
+        return ordered
     }
 
     // MARK: - Word Placement

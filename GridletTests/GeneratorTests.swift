@@ -107,4 +107,18 @@ struct GeneratorTests {
             }
         }
     }
+
+    @Test("CrosswordLayoutGenerator can reach a denser small-grid word count")
+    func minimumWordTargetOnDenseWordList() {
+        let generator = CrosswordLayoutGenerator(columns: 5, rows: 5, seed: 12345)
+        let words = [
+            "APPLE", "PLANE", "EAGLE", "LATER", "PEAR", "ATE", "RAN", "CAT",
+            "DOG", "TEA", "ACE", "OAK", "SUN", "PEN", "ICE", "NET", "LOG",
+            "BAT", "HEN", "FIG", "GUM", "RUG", "TIN", "JAM", "VET"
+        ]
+
+        generator.generate(words: words, minimumWordCount: 6)
+
+        #expect(generator.result.count >= 6, "Dense word lists should produce at least 6 placed words on a 5×5 grid")
+    }
 }

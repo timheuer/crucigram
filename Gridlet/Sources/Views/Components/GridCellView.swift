@@ -23,9 +23,9 @@ struct GridCellView: View {
             // Cell number
             if let number = number {
                 Text("\(number)")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.6))
-                    .padding(1.5)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.black.opacity(0.7))
+                    .padding(2)
             }
 
             // Dev mode: dimmed solution letter (shown when no player letter)

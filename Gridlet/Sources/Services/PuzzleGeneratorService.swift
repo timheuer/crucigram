@@ -9,7 +9,7 @@ final class PuzzleGeneratorService: @unchecked Sendable {
 
     private let wordListService: WordListService
     private let aiWordService: AIWordService
-    private let minimumWords = 4
+    private let minimumWords = 6
 
     init(wordListService: WordListService = .shared,
          aiWordService: AIWordService = .shared) {
@@ -61,11 +61,32 @@ final class PuzzleGeneratorService: @unchecked Sendable {
         let dim = gridSize.dimension
         let lookup = clueLookup ?? { self.wordListService.clue(for: $0) }
 
-        // The generator itself handles multiple attempts and shuffling internally
-        let generator = CrosswordLayoutGenerator(columns: dim, rows: dim, seed: seed)
-        generator.generate(words: words)
+        var bestPlaced: [CrosswordLayoutGenerator.PlacedWord] = []
+        var bestGrid: [[Character?]] = []
+        var bestFilledCells = -1
 
-        return buildPuzzle(seed: seed, gridSize: gridSize, placed: generator.result, grid: generator.gridLetters(), clueLookup: lookup)
+        for offset in 0..<8 {
+            let layoutSeed = seed &+ (UInt64(offset) &* 0x9E3779B97F4A7C15)
+            let generator = CrosswordLayoutGenerator(columns: dim, rows: dim, seed: layoutSeed)
+            generator.generate(words: words, minimumWordCount: minimumWords)
+
+            let grid = generator.gridLetters()
+            let filledCells = grid.flatMap { $0 }.compactMap { $0 }.count
+
+            if bestGrid.isEmpty ||
+                generator.result.count > bestPlaced.count ||
+                (generator.result.count == bestPlaced.count && filledCells > bestFilledCells) {
+                bestPlaced = generator.result
+                bestGrid = grid
+                bestFilledCells = filledCells
+            }
+
+            if bestPlaced.count >= minimumWords && Double(bestFilledCells) / Double(dim * dim) >= 0.6 {
+                break
+            }
+        }
+
+        return buildPuzzle(seed: seed, gridSize: gridSize, placed: bestPlaced, grid: bestGrid, clueLookup: lookup)
     }
 
     private func buildPuzzle(
