@@ -160,7 +160,7 @@ struct ModelTests {
                 {
                     "id": "11111111-1111-1111-1111-111111111111",
                     "seed": 42,
-                    "gridSize": "five",
+                    "gridSize": 5,
                     "cells": [[{"row": 0, "col": 0, "letter": "C"}]],
                     "words": [{
                         "id": "22222222-2222-2222-2222-222222222222",

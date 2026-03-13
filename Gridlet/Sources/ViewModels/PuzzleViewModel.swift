@@ -7,6 +7,7 @@ final class PuzzleViewModel {
   let puzzle: PuzzleDefinition
   var gameState: GameState
   var devMode = false
+  var showSolution = false
 
   private let persistence = PersistenceService.shared
 

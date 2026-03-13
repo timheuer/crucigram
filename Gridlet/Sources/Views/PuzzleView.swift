@@ -105,9 +105,9 @@ struct PuzzleView: View {
 
       if viewModel.devMode {
         Button {
-          viewModel.devMode.toggle()
+          viewModel.showSolution.toggle()
         } label: {
-          Image(systemName: "eye.fill")
+          Image(systemName: viewModel.showSolution ? "eye.fill" : "eye.slash")
             .foregroundStyle(.orange)
         }
         .buttonStyle(.bordered)

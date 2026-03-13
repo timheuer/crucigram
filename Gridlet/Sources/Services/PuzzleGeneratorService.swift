@@ -8,11 +8,13 @@ import CryptoKit
 final class PuzzleGeneratorService: @unchecked Sendable {
     /// Golden-ratio stride used to deterministically perturb layout seeds across retries.
     private static let layoutSeedStride: UInt64 = 0x9E3779B97F4A7C15
-    private static let maxLayoutSeedAttempts = 8
+    private static let maxLayoutSeedAttempts = 4
 
     private let wordListService: WordListService
     private let aiWordService: AIWordService
-    private let minimumWords = 6
+    private func minimumWords(for gridSize: GridSize) -> Int {
+        gridSize == .six ? 8 : 6
+    }
 
     init(wordListService: WordListService = .shared,
          aiWordService: AIWordService = .shared) {
@@ -38,7 +40,7 @@ final class PuzzleGeneratorService: @unchecked Sendable {
         let dim = gridSize.dimension
 
         // Get AI-generated words and diagnostics
-        let generationResult = await aiWordService.generateWordClues(count: 80, maxLength: dim, seed: seed)
+        let generationResult = await aiWordService.generateWordClues(count: 40, maxLength: dim, seed: seed)
         let wordClues = generationResult.words
 
         // Build the puzzle using AI words, with clue lookup from AI results
@@ -72,7 +74,49 @@ final class PuzzleGeneratorService: @unchecked Sendable {
     ) -> PuzzleDefinition {
         let dim = gridSize.dimension
         let lookup = clueLookup ?? { self.wordListService.clue(for: $0) }
+        let minWords = minimumWords(for: gridSize)
 
+        let result = runLayoutAttempts(words: words, seed: seed, dim: dim, minWords: minWords)
+
+        // If we fell short of the minimum, supplement with bundled words and retry
+        if result.placed.count < minWords {
+            let existingWords = Set(words.map { $0.uppercased() })
+            let extra = wordListService.words(maxLength: dim)
+                .filter { !existingWords.contains($0.uppercased()) }
+            let combined = words + extra
+            let retryResult = runLayoutAttempts(words: combined, seed: seed, dim: dim, minWords: minWords)
+
+            if retryResult.placed.count > result.placed.count {
+                return buildPuzzle(
+                    seed: seed,
+                    gridSize: gridSize,
+                    placed: retryResult.placed,
+                    grid: retryResult.grid,
+                    aiGenerationStatus: aiGenerationStatus,
+                    aiGenerationDetail: aiGenerationDetail,
+                    clueLookup: lookup
+                )
+            }
+        }
+
+        return buildPuzzle(
+            seed: seed,
+            gridSize: gridSize,
+            placed: result.placed,
+            grid: result.grid,
+            aiGenerationStatus: aiGenerationStatus,
+            aiGenerationDetail: aiGenerationDetail,
+            clueLookup: lookup
+        )
+    }
+
+    private struct LayoutResult {
+        let placed: [CrosswordLayoutGenerator.PlacedWord]
+        let grid: [[Character?]]
+        let filledCells: Int
+    }
+
+    private func runLayoutAttempts(words: [String], seed: UInt64, dim: Int, minWords: Int) -> LayoutResult {
         var bestPlaced: [CrosswordLayoutGenerator.PlacedWord] = []
         var bestGrid: [[Character?]] = []
         var bestFilledCells = -1
@@ -80,7 +124,7 @@ final class PuzzleGeneratorService: @unchecked Sendable {
         for attemptIndex in 0..<Self.maxLayoutSeedAttempts {
             let layoutSeed = seed &+ (UInt64(attemptIndex) &* Self.layoutSeedStride)
             let generator = CrosswordLayoutGenerator(columns: dim, rows: dim, seed: layoutSeed)
-            generator.generate(words: words, minimumWordCount: minimumWords)
+            generator.generate(words: words, minimumWordCount: minWords)
 
             let grid = generator.gridLetters()
             let filledCells = grid.flatMap { $0 }.compactMap { $0 }.count
@@ -94,21 +138,13 @@ final class PuzzleGeneratorService: @unchecked Sendable {
             }
 
             let bestDensity = Double(bestFilledCells) / Double(dim * dim)
-            if bestPlaced.count >= minimumWords &&
+            if bestPlaced.count >= minWords &&
                 bestDensity >= CrosswordLayoutGenerator.targetDensityThreshold {
                 break
             }
         }
 
-        return buildPuzzle(
-            seed: seed,
-            gridSize: gridSize,
-            placed: bestPlaced,
-            grid: bestGrid,
-            aiGenerationStatus: aiGenerationStatus,
-            aiGenerationDetail: aiGenerationDetail,
-            clueLookup: lookup
-        )
+        return LayoutResult(placed: bestPlaced, grid: bestGrid, filledCells: bestFilledCells)
     }
 
     private func buildPuzzle(

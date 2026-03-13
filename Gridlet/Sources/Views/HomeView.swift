@@ -5,6 +5,9 @@ struct HomeView: View {
   @State private var navigateToPuzzle = false
   @State private var stats = PersistenceService.shared.loadPlayerStats()
   @State private var isGenerating = false
+  @State private var generatingPhraseIndex = 0
+  @State private var generatingTimer: Timer?
+  @State private var countdownSeconds: Int = 0
   @State private var titleTapCount = 0
   @State private var showOnboarding = false
   @State private var showResumeAlert = false
@@ -15,6 +18,21 @@ struct HomeView: View {
   private let generator = PuzzleGeneratorService()
   private let persistence = PersistenceService.shared
 
+  private let generatingPhrases = [
+    "Searching the dictionary…",
+    "Finding good words…",
+    "Asking the crossword wizards…",
+    "Sharpening pencils…",
+    "Checking 4 across…",
+    "Erasing and trying again…",
+    "Consulting the thesaurus…",
+    "Debating vowel placement…",
+    "Almost there…",
+    "Convincing words to intersect…",
+    "Brewing crossword magic…",
+    "Untangling letters…",
+  ]
+
   var body: some View {
     NavigationStack {
       VStack(spacing: 0) {
@@ -22,20 +40,25 @@ struct HomeView: View {
 
         // Title area
         VStack(spacing: 8) {
-          Text("Gridlet")
-            .font(.system(size: 42, weight: .bold, design: .rounded))
-            .accessibilityAddTraits(.isHeader)
-            .onTapGesture {
-              titleTapCount += 1
-              if titleTapCount >= 5 {
-                devModeEnabled.toggle()
-                titleTapCount = 0
-              }
+            HStack(spacing: 4) {
+                Text("Gridlet")
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .accessibilityAddTraits(.isHeader)
+                    .onTapGesture {
+                        titleTapCount += 1
+                        if titleTapCount >= 5 {
+                            devModeEnabled.toggle()
+                            titleTapCount = 0
+                        }
+                    }
+                Image(systemName: "sparkles")
+                  .symbolRenderingMode(.hierarchical)
+                  .foregroundStyle(Color.accentColor)
             }
 
-          Text("Word Puzzle")
-            .font(.title3)
-            .foregroundStyle(.secondary)
+            Text("Daily unlimited crossword puzzles")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
         }
 
         Spacer()
@@ -83,12 +106,15 @@ struct HomeView: View {
           } label: {
             HStack {
               if isGenerating {
-                ProgressView()
-                  .controlSize(.small)
+                Image(systemName: "sparkles")
+                  .symbolEffect(.bounce, options: .repeating)
               } else {
                 Image(systemName: "play.fill")
               }
-              Text(isGenerating ? "Generating..." : unlimitedButtonLabel)
+              Text(isGenerating ? generatingPhrases[generatingPhraseIndex] : unlimitedButtonLabel)
+                .contentTransition(.numericText())
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)
           }
@@ -130,6 +156,13 @@ struct HomeView: View {
           }
         }
         .padding(.horizontal, 32)
+
+        if devModeEnabled && isGenerating {
+          Text("AI timeout: \(countdownSeconds)s")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.orange)
+            .padding(.top, 8)
+        }
 
         Spacer()
       }
@@ -211,7 +244,7 @@ struct HomeView: View {
   }
 
   private func startDailyPuzzle() {
-    isGenerating = true
+    startGenerating()
 
     Task {
       let puzzle = await dailyService.todaysPuzzle()
@@ -226,7 +259,7 @@ struct HomeView: View {
       await MainActor.run {
         puzzleVM = PuzzleViewModel(puzzle: puzzle, gameState: gameState)
         puzzleVM?.devMode = devModeEnabled
-        isGenerating = false
+        stopGenerating()
         navigateToPuzzle = true
       }
     }
@@ -270,7 +303,7 @@ struct HomeView: View {
     persistence.clearUnlimitedPuzzle()
 
     let seed = UInt64.random(in: 0...UInt64.max)
-    isGenerating = true
+    startGenerating()
 
     Task {
       let puzzle = await generator.generateWithAI(seed: seed)
@@ -282,7 +315,7 @@ struct HomeView: View {
       await MainActor.run {
         puzzleVM = PuzzleViewModel(puzzle: puzzle, gameState: gameState)
         puzzleVM?.devMode = devModeEnabled
-        isGenerating = false
+        stopGenerating()
         navigateToPuzzle = true
       }
     }
@@ -320,6 +353,34 @@ struct HomeView: View {
   private func refreshStats() {
     stats = persistence.loadPlayerStats()
     stats.validateStreak()
+  }
+
+  // MARK: - Generating Phrases
+
+  private func startGenerating() {
+    generatingPhraseIndex = Int.random(in: 0..<generatingPhrases.count)
+    countdownSeconds = Int(AIWordService.aiTimeoutSeconds)
+    isGenerating = true
+    generatingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+      Task { @MainActor in
+        withAnimation {
+          if countdownSeconds > 0 {
+            countdownSeconds -= 1
+          }
+          // Rotate phrase every 2 seconds
+          if countdownSeconds % 2 == 0 {
+            generatingPhraseIndex = (generatingPhraseIndex + 1) % generatingPhrases.count
+          }
+        }
+      }
+    }
+  }
+
+  private func stopGenerating() {
+    generatingTimer?.invalidate()
+    generatingTimer = nil
+    isGenerating = false
+    countdownSeconds = 0
   }
 
   // MARK: - Dev Mode Actions

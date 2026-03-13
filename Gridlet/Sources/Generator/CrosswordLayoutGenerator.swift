@@ -11,7 +11,7 @@ final class CrosswordLayoutGenerator {
     /// Small mobile grids feel sparse below ~60% fill, but higher targets make it much harder
     /// for the search to find a valid layout that can still place enough intersecting words.
     static let targetDensityThreshold = 0.6
-    private static let maxLayoutAttempts = 60
+    private static let maxLayoutAttempts = 30
 
     struct PlacedWord {
         let word: String
@@ -43,9 +43,9 @@ final class CrosswordLayoutGenerator {
     /// Generate a crossword layout from the given words.
     /// Runs multiple full attempts with different word orderings and keeps the densest result.
     func generate(words: [String], minimumWordCount: Int = 0) {
-        let candidates = words
+        let candidates = Array(Set(words
             .map { $0.uppercased() }
-            .filter { $0.count <= max(columns, rows) && $0.count >= 2 }
+            .filter { $0.count <= max(columns, rows) && $0.count >= 2 }))
 
         var bestPlaced: [PlacedWord] = []
         var bestGrid: [[String]] = []
@@ -104,7 +104,7 @@ final class CrosswordLayoutGenerator {
 
     private func buildOverlapScores(for words: [String]) -> [String: Int] {
         var scores: [String: Int] = [:]
-        let letterSets = Dictionary(uniqueKeysWithValues: words.map { ($0, Set($0)) })
+        let letterSets = Dictionary(words.map { ($0, Set($0)) }, uniquingKeysWith: { first, _ in first })
 
         for word in words {
             let uniqueLetters = letterSets[word]!

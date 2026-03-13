@@ -20,6 +20,7 @@
 		56FB375B93DCF7D004255232 /* WordDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F92BC27609AE89A5E14901F /* WordDirection.swift */; };
 		5F7DB57736EBB1BD58C6111F /* PlayerStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34980EE859472FF563BE6361 /* PlayerStats.swift */; };
 		6AA07A78926D7E6F5D05C3F4 /* WordEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34BC11F9C08AD117279993E /* WordEntry.swift */; };
+		787F43AC2AFD7CBB662B1FB2 /* AIGenerationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F372CF2801E86DF5E32A54 /* AIGenerationStatus.swift */; };
 		7AC5135628F4395FDEDF65AF /* WordListService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C669B10D072EC70CDD1F8A /* WordListService.swift */; };
 		7D040D80135493A8203B5023 /* GridletApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C86EE0E04FB9278E6F6901F /* GridletApp.swift */; };
 		875CC4A28990852697F9CD05 /* GridDensityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701B4F0FB8505CCBAFC05DA5 /* GridDensityTests.swift */; };
@@ -71,6 +72,7 @@
 		63177488FB00E86FE4EFE9BE /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		701B4F0FB8505CCBAFC05DA5 /* GridDensityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridDensityTests.swift; sourceTree = "<group>"; };
 		7EB7DE92A992B47B61ED5C15 /* GridSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridSize.swift; sourceTree = "<group>"; };
+		82F372CF2801E86DF5E32A54 /* AIGenerationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGenerationStatus.swift; sourceTree = "<group>"; };
 		8C40CE59F94B6EE08C2DA47A /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
 		96A9F1EFA3F3DB2B9CD4F1C7 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		9E311F74BA6D26C76D5D9ED8 /* AcknowledgmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgmentsView.swift; sourceTree = "<group>"; };
@@ -103,6 +105,7 @@
 		48FE833152FFC72CEFA49D2F /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				82F372CF2801E86DF5E32A54 /* AIGenerationStatus.swift */,
 				DFD0ED06DF51A537DB5F94A6 /* CellDefinition.swift */,
 				E057B13461FC75EF2DFA0F68 /* GameState.swift */,
 				7EB7DE92A992B47B61ED5C15 /* GridSize.swift */,
@@ -316,6 +319,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				787F43AC2AFD7CBB662B1FB2 /* AIGenerationStatus.swift in Sources */,
 				B86074B2C930FCC7E7F71C26 /* AIWordService.swift in Sources */,
 				199F586F9E8B1B9E60889F54 /* AcknowledgmentsView.swift in Sources */,
 				4CD1A81AE38E777130ABC3D9 /* CellDefinition.swift in Sources */,

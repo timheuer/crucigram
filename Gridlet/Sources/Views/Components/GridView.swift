@@ -27,7 +27,7 @@ struct GridView: View {
               isActiveWord: activeWordCells.contains(cellPos),
               isWrong: viewModel.gameState.checkedWrongCells.contains(cellPos),
               number: viewModel.cellNumber(row: row, col: col),
-              showSolution: viewModel.devMode,
+              showSolution: viewModel.showSolution,
               accessibilityLabel: viewModel.cellAccessibilityLabel(row: row, col: col),
               accessibilityValue: viewModel.cellAccessibilityValue(row: row, col: col),
               accessibilityHint: viewModel.cellAccessibilityHint(row: row, col: col)
