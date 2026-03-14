@@ -16,7 +16,11 @@ final class PuzzleGeneratorService: @unchecked Sendable {
     private let wordListService: WordListService
     private let aiWordService: AIWordService
     private func minimumWords(for gridSize: GridSize) -> Int {
-        gridSize == .six ? 8 : 6
+        switch gridSize {
+        case .seven: return 10
+        case .six: return 8
+        case .five: return 6
+        }
     }
 
     init(wordListService: WordListService = .shared,
@@ -27,8 +31,10 @@ final class PuzzleGeneratorService: @unchecked Sendable {
 
     /// Generate a puzzle from a seed using the bundled word list (synchronous, deterministic).
     func generate(seed: UInt64) -> PuzzleDefinition {
-        var rng = GKMersenneTwisterRandomSource(seed: seed)
-        let gridSize: GridSize = rng.nextInt(upperBound: 4) == 0 ? .five : .six
+        let rng = GKMersenneTwisterRandomSource(seed: seed)
+        let roll = rng.nextInt(upperBound: 20)
+        // ~10% 5×5, ~45% 6×6, ~45% 7×7
+        let gridSize: GridSize = roll < 2 ? .five : roll < 11 ? .six : .seven
         let dim = gridSize.dimension
 
         let allWords = wordListService.words(maxLength: dim)
@@ -38,8 +44,10 @@ final class PuzzleGeneratorService: @unchecked Sendable {
     /// Generate a puzzle using Apple Intelligence for word/clue generation (async).
     /// Falls back to bundled list if AI is unavailable.
     func generateWithAI(seed: UInt64) async -> PuzzleDefinition {
-        var rng = GKMersenneTwisterRandomSource(seed: seed)
-        let gridSize: GridSize = rng.nextInt(upperBound: 4) == 0 ? .five : .six
+        let rng = GKMersenneTwisterRandomSource(seed: seed)
+        let roll = rng.nextInt(upperBound: 20)
+        // ~10% 5×5, ~45% 6×6, ~45% 7×7
+        let gridSize: GridSize = roll < 2 ? .five : roll < 11 ? .six : .seven
         let dim = gridSize.dimension
 
         // Get AI-generated words and diagnostics

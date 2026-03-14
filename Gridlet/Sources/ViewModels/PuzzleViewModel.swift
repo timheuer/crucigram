@@ -11,8 +11,8 @@ final class PuzzleViewModel {
 
   private let persistence = PersistenceService.shared
 
-  /// The clue text for the currently active word.
-  var activeClue: String {
+  /// The number and direction label for the active clue (e.g. "1→" or "3↓").
+  var activeClueLabel: String {
     guard let cell = gameState.selectedCell,
       let word = puzzle.word(at: cell.row, col: cell.col, direction: gameState.activeDirection)
     else {
@@ -20,7 +20,17 @@ final class PuzzleViewModel {
     }
     let number = wordNumber(for: word)
     let arrow = word.direction == .across ? "→" : "↓"
-    return "\(number)\(arrow) \(word.clue)"
+    return "\(number)\(arrow)"
+  }
+
+  /// The clue text only (without the number/direction prefix).
+  var activeClueText: String {
+    guard let cell = gameState.selectedCell,
+      let word = puzzle.word(at: cell.row, col: cell.col, direction: gameState.activeDirection)
+    else {
+      return ""
+    }
+    return word.clue
   }
 
   var activeClueAccessibilityLabel: String {

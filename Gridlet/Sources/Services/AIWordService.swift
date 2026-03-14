@@ -133,20 +133,69 @@ final class AIWordService: Sendable {
     -> GenerationResult
   {
     let instructions = """
-      You are an expert crossword puzzle creator for a newspaper. Generate \
-      engaging English words with clever crossword-style clues. Rules:
-      - Words must be 3 to \(maxLength) letters long — NEVER longer than \(maxLength) letters
-      - Include a MIX: at least 3 short words (3 letters) and the rest 4-\(maxLength) letters
-      - Even short words should have clever clues — not just one-word definitions
-      - Good short words: OAK → "Sturdy shade tree", OWL → "Nocturnal hunter", \
-      INK → "Pen's lifeblood", ICE → "Rink surface", JAM → "Toast topper"
-      - Good longer words: BLOOM → "Garden's grand opening", QUEST → "Knight's undertaking"
-      - Words must be UPPERCASE, letters only (A-Z)
-      - No proper nouns, no offensive words
-      - Clues should be witty, indirect, or use wordplay when possible
-      - Clues must be 2-8 words and must NOT contain the answer word or any form of it
-      - Clues must be grammatically complete phrases — never truncated mid-thought
+      You are an expert newspaper crossword constructor generating entries for a small crossword puzzle (5x5, 6x6, or 7x7 grid).
+
+      Generate engaging English crossword entries with clever crossword-style clues.
+
+      ANCHOR ENTRIES
+      First generate exactly 3 anchor words that are 6-\(maxLength) letters long.
+      Anchor words should be vivid, familiar, image-evoking, and fun for a crossword.
+      Prefer strong, concrete words like things, places, actions, or natural imagery.
+      Do not make all anchor words share the same letter pattern.
+
+      SUPPORTING ENTRIES
+      Then generate exactly 25 additional entries.
+
+      WORD RULES
+      - Words must be 3 to \(maxLength) letters long
+      - Never exceed \(maxLength) letters
+      - Include at least 4 three-letter words
+      - Include a good mix of 4-, 5-, 6-, and \(maxLength)-letter words when possible
+      - Words must be UPPERCASE letters only (A-Z)
+      - No proper nouns
+      - No offensive words
+      - No slang-heavy or overly obscure terms
       - All words must be unique within the batch
+
+      CROSSWORD-FRIENDLY LETTER RULES
+      - Prefer words with a healthy mix of vowels and consonants
+      - Prefer common crossword-friendly letters like A, E, R, S, T, L, N
+      - Prefer vivid, common, or interesting vocabulary
+      - Avoid excessive repeated letters
+      - Avoid words with awkward letter patterns or rare endings unless the word is very common
+      - Avoid obscure crossword filler such as ETA, ERE, ORE, OLE, ALA
+      - Avoid repeating the same starting letter more than twice
+
+      VOCABULARY STYLE
+      Prefer words from everyday language, nature, weather, food, animals, objects, actions, places, or emotions.
+      Favor words that create a strong mental image.
+
+      CLUE RULES
+      - Every word must include a crossword-style clue
+      - Clues must be 2-8 words
+      - Clues must not contain the answer word or any form of it
+      - Clues should be witty, indirect, playful, metaphorical, or lightly clever when possible
+      - Avoid plain dictionary definitions when possible
+      - Clues must read like complete natural phrases, never sentence fragments cut off mid-thought
+
+      GOOD EXAMPLES
+      OAK — Forest giant with acorns
+      OWL — Silent hunter of the night
+      INK — Writer's bottled thoughts
+      ICE — Skater's frozen stage
+      JAM — Toast's sticky partner
+      BLOOM — Garden's grand opening
+      QUEST — Knight's wandering mission
+      SPARK — Tiny idea igniter
+      CRISP — Apple texture at harvest
+
+      OUTPUT FORMAT
+      Return exactly 28 entries total.
+      Return only entries in this exact format:
+      WORD — clue
+
+      Do not number the entries.
+      Do not add categories, explanations, headings, or extra text.
       """
     let session = LanguageModelSession(instructions: instructions)
 

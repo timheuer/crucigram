@@ -32,5 +32,20 @@ struct GridDensityTests {
             let pct = Double(filled) / Double(total) * 100
             print("6x6 Seed \(seed): \(gen.result.count) words, \(filled)/\(total) cells filled (\(Int(pct))%)")
         }
+
+        for seed: UInt64 in [1, 42, 100, 999, 5555, 12345] {
+            let gen = CrosswordLayoutGenerator(columns: 7, rows: 7, seed: seed)
+            let words = ["BLANKET","CAPTAIN","EASTERN","FREEDOM","JOURNEY","KITCHEN",
+                         "LAUGHTER","MORNING","PATTERN","SHELTER","WESTERN","BATTERY",
+                         "GARDEN","CASTLE","BREEZE","FABRIC","INSECT","KITTEN",
+                         "ANCHOR","BUTTON","GENTLE","ISLAND","CANDLE","HANDLE",
+                         "APPLE","CRANE","EAGLE","FLAME","GRAPE","HOUSE"]
+            gen.generate(words: words)
+            let grid = gen.gridLetters()
+            let filled = grid.flatMap { $0 }.compactMap { $0 }.count
+            let total = 49
+            let pct = Double(filled) / Double(total) * 100
+            print("7x7 Seed \(seed): \(gen.result.count) words, \(filled)/\(total) cells filled (\(Int(pct))%)")
+        }
     }
 }

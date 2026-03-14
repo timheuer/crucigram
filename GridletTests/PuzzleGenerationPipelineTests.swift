@@ -126,20 +126,26 @@ struct PuzzleGenerationPipelineTests {
         let service = PuzzleGeneratorService()
         let puzzle = service.generate(seed: seed)
         // Just verify it produces a valid grid size
-        #expect(puzzle.gridSize == .five || puzzle.gridSize == .six)
+        #expect(puzzle.gridSize == .five || puzzle.gridSize == .six || puzzle.gridSize == .seven)
     }
 
-    @Test("6x6 grids appear more often than 5x5")
-    func sixBySixMoreCommon() {
+    @Test("6x6 and 7x7 grids appear more often than 5x5")
+    func sixAndSevenMoreCommon() {
         let service = PuzzleGeneratorService()
         var fiveCount = 0
         var sixCount = 0
+        var sevenCount = 0
         for seed: UInt64 in 0..<100 {
             let puzzle = service.generate(seed: seed)
-            if puzzle.gridSize == .five { fiveCount += 1 }
-            else { sixCount += 1 }
+            switch puzzle.gridSize {
+            case .five: fiveCount += 1
+            case .six: sixCount += 1
+            case .seven: sevenCount += 1
+            }
         }
-        #expect(sixCount > fiveCount, "6×6 should appear more often (got \(sixCount) vs \(fiveCount))")
+        #expect(sixCount > fiveCount, "6×6 should appear more often than 5×5 (got \(sixCount) vs \(fiveCount))")
+        #expect(sevenCount > fiveCount, "7×7 should appear more often than 5×5 (got \(sevenCount) vs \(fiveCount))")
+        #expect(sevenCount > 0, "7×7 should appear at least once in 100 puzzles (got \(sevenCount))")
     }
 
     // MARK: - Puzzle Validity

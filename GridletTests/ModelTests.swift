@@ -9,6 +9,7 @@ struct ModelTests {
     func gridSizeDimensions() {
         #expect(GridSize.five.dimension == 5)
         #expect(GridSize.six.dimension == 6)
+        #expect(GridSize.seven.dimension == 7)
     }
 
     @Test("WordDirection toggle")

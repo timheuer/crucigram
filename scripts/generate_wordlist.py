@@ -26,8 +26,8 @@ from wordfreq import word_frequency, top_n_list
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 MIN_LENGTH = 3
-MAX_LENGTH = 6
-TARGET_COUNT = 800       # aim for this many word-clue pairs
+MAX_LENGTH = 7
+TARGET_COUNT = 3000      # aim for this many word-clue pairs
 MAX_CLUE_WORDS = 8       # max words in a clue (truncated at natural boundaries)
 LANGUAGE = "en"
 FREQ_LIST = "best"       # wordfreq's best-quality list
@@ -157,7 +157,7 @@ def main():
 
     print("Getting common English words from wordfreq...")
     # Get top N most frequent English words
-    common_words = top_n_list(LANGUAGE, 8000, wordlist=FREQ_LIST)
+    common_words = top_n_list(LANGUAGE, 20000, wordlist=FREQ_LIST)
 
     # Filter to valid crossword words
     candidates = [w for w in common_words if is_valid_word(w)]

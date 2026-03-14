@@ -1,7 +1,7 @@
 # Crucigram — Copilot Instructions
 
 ## Project Overview
-Crucigram is an offline-first iPhone word puzzle game built with SwiftUI (iOS 26+, `com.timheuer.gridlet`). Players solve 5×5 or 6×6 crossword-style grids with words running horizontally and vertically only. The app offers a deterministic daily puzzle plus unlimited algorithmically-generated puzzles — all generated on-device with no backend.
+Crucigram is an offline-first iPhone word puzzle game built with SwiftUI (iOS 26+, `com.timheuer.gridlet`). Players solve 5×5, 6×6, or 7×7 crossword-style grids with words running horizontally and vertically only. The app offers a deterministic daily puzzle plus unlimited algorithmically-generated puzzles — all generated on-device with no backend.
 
 ## Build Instructions
 - **Always run `xcodegen generate` before building.** The Xcode project is generated from `project.yml` — never edit `Gridlet.xcodeproj` directly.
@@ -31,7 +31,7 @@ Crucigram is an offline-first iPhone word puzzle game built with SwiftUI (iOS 26
 | System | Files | Purpose |
 |--------|-------|---------|
 | Models | `Gridlet/Sources/Models/` | `PuzzleDefinition`, `GameState`, `PlayerStats`, `WordEntry`, etc. |
-| Generator | `Gridlet/Sources/Generator/` | `CrosswordLayoutGenerator` — seeded crossword layout engine optimized for 5×5/6×6 grids |
+| Generator | `Gridlet/Sources/Generator/` | `CrosswordLayoutGenerator` — seeded crossword layout engine optimized for 5×5/6×6/7×7 grids |
 | Services | `Gridlet/Sources/Services/` | `PuzzleGeneratorService`, `DailyPuzzleService`, `AIWordService`, `WordListService`, `PersistenceService` |
 | ViewModels | `Gridlet/Sources/ViewModels/` | `PuzzleViewModel`, `StatsViewModel` |
 | Views | `Gridlet/Sources/Views/` | `HomeView`, `PuzzleView`, `StatsView`, `SettingsView`, `OnboardingView`, `AcknowledgmentsView`, plus `Components/` |
@@ -48,7 +48,7 @@ Crucigram is an offline-first iPhone word puzzle game built with SwiftUI (iOS 26
 - To regenerate fallback wordlist: `pip install wordfreq wn && python3 scripts/generate_wordlist.py`
 
 ## Game Rules (Fixed — Do Not Change)
-- Grid sizes: **only 5×5 or 6×6** — never any other sizes
+- Grid sizes: **only 5×5, 6×6, or 7×7** — never any other sizes
 - Words run **only horizontally or vertically** — no diagonals
 - Tapping a cell reveals the clue for the active word (across or down)
 - Tapping the same cell again toggles between across and down

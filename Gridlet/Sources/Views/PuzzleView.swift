@@ -25,7 +25,8 @@ struct PuzzleView: View {
 
       // Clue bar with prev/next navigation — fixed height
       ClueBarView(
-        clueText: viewModel.activeClue,
+        clueLabel: viewModel.activeClueLabel,
+        clueText: viewModel.activeClueText,
         accessibilityLabel: viewModel.activeClueAccessibilityLabel,
         accessibilityValue: viewModel.activeClueAccessibilityValue,
         accessibilityHint: viewModel.activeClueAccessibilityHint,
