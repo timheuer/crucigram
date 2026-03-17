@@ -10,22 +10,51 @@ private let logger = Logger(subsystem: "com.timheuer.gridlet", category: "AIWord
 struct GeneratedWordClue: Equatable {
   @Guide(
     description:
-      "An English word, uppercase, letters only. No proper nouns, abbreviations, or obscure jargon"
+      "An English crossword answer in UPPERCASE letters only (A-Z). Must be common or recognizable, not a proper noun, abbreviation, acronym, offensive term, or obscure jargon."
   )
   var word: String
 
   @Guide(
     description:
-      "A clever, concise crossword-style clue for the word, 2 to 8 words long. Must not contain the answer word or any form of it. Must be a complete phrase — never end mid-thought"
+      "A clever crossword-style clue, 2 to 8 words long. Must not contain the answer word or any form of it. Should read as a complete natural phrase, not a fragment. Prefer playful, indirect, figurative, conversational, or lightly witty clues. Avoid plain dictionary definitions."
   )
   var clue: String
 }
 
-/// A batch of word-clue pairs for puzzle generation.
 @Generable
 struct WordClueBatch: Equatable {
-  @Guide(description: "A list of unique word-clue pairs for a crossword puzzle", .count(10))
+  @Guide(
+    description:
+      "A list of unique crossword word-clue pairs with varied word choices and no duplicate answers.",
+    .count(15)
+  )
   var entries: [GeneratedWordClue]
+}
+
+/// A clue rewritten by Apple Intelligence for a given crossword answer.
+@Generable
+struct RewrittenClue: Equatable {
+  @Guide(
+    description:
+      "The crossword answer word in UPPERCASE letters only (A-Z). Must exactly match the provided word."
+  )
+  var word: String
+
+  @Guide(
+    description:
+      "A clever crossword-style clue, 2 to 8 words long. Must not contain the answer word or any form of it. Should read as a complete natural phrase, not a fragment. Prefer playful, indirect, figurative, conversational, or lightly witty clues. Avoid plain dictionary definitions."
+  )
+  var clue: String
+}
+
+@Generable
+struct RewrittenClueBatch: Equatable {
+  @Guide(
+    description:
+      "A list of rewritten crossword clues, one per provided word. Each entry must use the exact word given.",
+    .count(30)
+  )
+  var entries: [RewrittenClue]
 }
 
 /// Generates word-clue pairs using Apple Intelligence on-device language model.
@@ -51,24 +80,42 @@ final class AIWordService: Sendable {
     "consisting", "having", "using", "including", "containing", "composed",
   ]
 
-  private let fallbackService = WordListService.shared
-
-  /// Whether Apple Intelligence is available on this device.
-  var isAvailable: Bool {
-    SystemLanguageModel.default.availability == .available
-  }
-
   /// Number of batch requests to make to accumulate enough AI-generated entries.
   private static let batchRounds = 3
+
   /// Minimum fraction of requested count that must pass validation to use AI output.
   private static let minimumValidFraction = 0.3
 
   /// Maximum time in seconds to wait for all AI batch rounds before falling back.
   static let aiTimeoutSeconds: TimeInterval = 18
 
+  /// Maximum time in seconds to wait for AI clue rewriting on fallback words.
+  private static let clueRewriteTimeoutSeconds: TimeInterval = 10
+
+  private let fallbackService = WordListService.shared
+
+  // MARK: - Recent word tracking
+
+  private let recentWordsKey = "AIWordService.recentWords"
+  private let recentWordsLimit = 250
+  private let promptAvoidWordsLimit = 80
+
+  private let genericWords: Set<String> = [
+    "TREE", "ROCK", "THING", "ITEM", "STUFF",
+  ]
+
+  private let overusedModelFavorites: Set<String> = [
+    "SPARK", "CRANE", "GLOW", "LATTE", "BREEZE", "SNEAK",
+  ]
+
+  /// Whether Apple Intelligence is available on this device.
+  var isAvailable: Bool {
+    SystemLanguageModel.default.availability == .available
+  }
+
   /// Generate a batch of word-clue pairs for a puzzle.
   /// Uses Apple Intelligence if available, otherwise falls back to bundled list.
-  /// Makes multiple batch requests to accumulate enough entries (each batch returns up to 15).
+  /// Makes multiple batch requests to accumulate enough entries.
   /// Falls back to bundled list if AI doesn't finish within the timeout.
   /// Returns the words along with generation diagnostics for developer mode.
   func generateWordClues(count: Int, maxLength: Int, seed: UInt64) async -> GenerationResult {
@@ -92,111 +139,52 @@ final class AIWordService: Sendable {
           throw AITimeoutError()
         }
 
-        // Return whichever finishes first; if AI wins we get its result,
-        // if the timeout wins the AI task is cancelled and we fall back.
         if let result = try await group.next() {
           group.cancelAll()
           return result
         }
 
-        // Should not reach here, but fall back just in case.
-        return GenerationResult(
-          words: fallbackWords(count: count, maxLength: maxLength, seed: seed),
-          aiGeneratedWords: [],
-          status: .generationRequestFailed,
-          detail: "Unexpected timeout state."
+        return await fallbackWithAIClues(
+          count: count,
+          maxLength: maxLength,
+          seed: seed,
+          baseDetail: "Unexpected timeout state."
         )
       }
     } catch is AITimeoutError {
-      logger.warning("AI generation timed out after \(Int(Self.aiTimeoutSeconds))s — falling back to bundled list")
-      return GenerationResult(
-        words: fallbackWords(count: count, maxLength: maxLength, seed: seed),
-        aiGeneratedWords: [],
-        status: .generationRequestFailed,
-        detail: "AI generation timed out after \(Int(Self.aiTimeoutSeconds))s."
+      logger.warning(
+        "AI generation timed out after \(Int(Self.aiTimeoutSeconds))s — trying AI clue rewrite on bundled words"
+      )
+      return await fallbackWithAIClues(
+        count: count,
+        maxLength: maxLength,
+        seed: seed,
+        baseDetail: "AI generation timed out after \(Int(Self.aiTimeoutSeconds))s."
       )
     } catch {
-      logger.error("AI generation failed: \(error.localizedDescription) — falling back to bundled list")
-      return GenerationResult(
-        words: fallbackWords(count: count, maxLength: maxLength, seed: seed),
-        aiGeneratedWords: [],
-        status: .generationRequestFailed,
-        detail: error.localizedDescription
+      logger.error("AI generation failed: \(error.localizedDescription) — trying AI clue rewrite on bundled words")
+      return await fallbackWithAIClues(
+        count: count,
+        maxLength: maxLength,
+        seed: seed,
+        baseDetail: error.localizedDescription
       )
     }
   }
 
   private struct AITimeoutError: Error {}
 
+  // MARK: - AI generation
+
   /// The actual AI generation logic, extracted so it can be raced against a timeout.
   private func generateWithAI(count: Int, maxLength: Int, seed: UInt64) async throws
     -> GenerationResult
   {
-    let instructions = """
-      You are an expert newspaper crossword constructor generating entries for a small crossword puzzle (5x5, 6x6, or 7x7 grid).
+    let recentWords = loadRecentWords()
+    let recentWordsSet = Set(recentWords)
+    let avoidBlock = makeAvoidBlock(from: recentWords)
+    let instructions = makeInstructions(maxLength: maxLength, avoidBlock: avoidBlock)
 
-      Generate engaging English crossword entries with clever crossword-style clues.
-
-      ANCHOR ENTRIES
-      First generate exactly 3 anchor words that are 6-\(maxLength) letters long.
-      Anchor words should be vivid, familiar, image-evoking, and fun for a crossword.
-      Prefer strong, concrete words like things, places, actions, or natural imagery.
-      Do not make all anchor words share the same letter pattern.
-
-      SUPPORTING ENTRIES
-      Then generate exactly 25 additional entries.
-
-      WORD RULES
-      - Words must be 3 to \(maxLength) letters long
-      - Never exceed \(maxLength) letters
-      - Include at least 4 three-letter words
-      - Include a good mix of 4-, 5-, 6-, and \(maxLength)-letter words when possible
-      - Words must be UPPERCASE letters only (A-Z)
-      - No proper nouns
-      - No offensive words
-      - No slang-heavy or overly obscure terms
-      - All words must be unique within the batch
-
-      CROSSWORD-FRIENDLY LETTER RULES
-      - Prefer words with a healthy mix of vowels and consonants
-      - Prefer common crossword-friendly letters like A, E, R, S, T, L, N
-      - Prefer vivid, common, or interesting vocabulary
-      - Avoid excessive repeated letters
-      - Avoid words with awkward letter patterns or rare endings unless the word is very common
-      - Avoid obscure crossword filler such as ETA, ERE, ORE, OLE, ALA
-      - Avoid repeating the same starting letter more than twice
-
-      VOCABULARY STYLE
-      Prefer words from everyday language, nature, weather, food, animals, objects, actions, places, or emotions.
-      Favor words that create a strong mental image.
-
-      CLUE RULES
-      - Every word must include a crossword-style clue
-      - Clues must be 2-8 words
-      - Clues must not contain the answer word or any form of it
-      - Clues should be witty, indirect, playful, metaphorical, or lightly clever when possible
-      - Avoid plain dictionary definitions when possible
-      - Clues must read like complete natural phrases, never sentence fragments cut off mid-thought
-
-      GOOD EXAMPLES
-      OAK — Forest giant with acorns
-      OWL — Silent hunter of the night
-      INK — Writer's bottled thoughts
-      ICE — Skater's frozen stage
-      JAM — Toast's sticky partner
-      BLOOM — Garden's grand opening
-      QUEST — Knight's wandering mission
-      SPARK — Tiny idea igniter
-      CRISP — Apple texture at harvest
-
-      OUTPUT FORMAT
-      Return exactly 28 entries total.
-      Return only entries in this exact format:
-      WORD — clue
-
-      Do not number the entries.
-      Do not add categories, explanations, headings, or extra text.
-      """
     let session = LanguageModelSession(instructions: instructions)
 
     var allGenerated: [WordClue] = []
@@ -205,15 +193,12 @@ final class AIWordService: Sendable {
     for round in 0..<Self.batchRounds {
       try Task.checkCancellation()
 
-      let roundPrompt: String
-      if round == 0 {
-        roundPrompt =
-          "Generate crossword word-clue pairs. All words must be 3 to \(maxLength) letters. Include some 3-letter words. Use clever, indirect clues."
-      } else {
-        let avoid = seenWords.sorted().joined(separator: ", ")
-        roundPrompt =
-          "Generate more crossword word-clue pairs, all 3 to \(maxLength) letters. Include some 3-letter words. Use clever clues. Do NOT reuse: \(avoid)."
-      }
+      let combinedAvoidWords = Array(seenWords.union(recentWordsSet)).sorted()
+      let roundPrompt = makeRoundPrompt(
+        round: round,
+        maxLength: maxLength,
+        avoidWords: Array(combinedAvoidWords.prefix(promptAvoidWordsLimit))
+      )
 
       let response = try await session.respond(
         to: roundPrompt,
@@ -224,29 +209,33 @@ final class AIWordService: Sendable {
         let word = entry.word.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let clue = entry.clue.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // Reject clues that contain the answer word (case-insensitive)
         let clueWords = Set(
           clue.uppercased()
-            .components(separatedBy: .whitespaces)
+            .components(separatedBy: .whitespacesAndNewlines)
             .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+            .filter { !$0.isEmpty }
         )
 
         if word.count < 3 || word.count > maxLength {
           logger.debug("Rejected '\(word)': length \(word.count) out of range 3-\(maxLength)")
           return nil
         }
+
         if !word.allSatisfy({ $0.isLetter && $0.isASCII }) {
           logger.debug("Rejected '\(word)': contains non-ASCII or non-letter characters")
           return nil
         }
+
         if clue.isEmpty {
           logger.debug("Rejected '\(word)': empty clue")
           return nil
         }
+
         if seenWords.contains(word) {
-          logger.debug("Rejected '\(word)': duplicate word")
+          logger.debug("Rejected '\(word)': duplicate word in current run")
           return nil
         }
+
         if clueWords.contains(word) {
           logger.debug("Rejected '\(word)': clue '\(clue)' contains the answer word")
           return nil
@@ -254,20 +243,29 @@ final class AIWordService: Sendable {
 
         let lastWord =
           clue
-          .components(separatedBy: .whitespaces)
+          .components(separatedBy: .whitespacesAndNewlines)
           .last?
           .lowercased()
           .trimmingCharacters(in: .punctuationCharacters) ?? ""
-        if AIWordService.incompleteClueEnders.contains(lastWord) {
+
+        if Self.incompleteClueEnders.contains(lastWord) {
           logger.debug("Rejected '\(word)': clue '\(clue)' ends with incomplete word '\(lastWord)'")
           return nil
         }
 
-        logger.debug("Accepted '\(word)' → '\(clue)'")
+        let score = scoreCandidate(word: word, clue: clue, recentWords: recentWordsSet)
+        if score < -5 {
+          logger.debug("Rejected '\(word)': low novelty/quality score \(score)")
+          return nil
+        }
+
+        logger.debug("Accepted '\(word)' → '\(clue)' [score: \(score)]")
         return WordClue(word: word, clue: clue)
       }
 
-      logger.info("Round \(round + 1)/\(Self.batchRounds): AI returned \(response.content.entries.count) entries, \(validated.count) passed validation")
+      logger.info(
+        "Round \(round + 1)/\(Self.batchRounds): AI returned \(response.content.entries.count) entries, \(validated.count) passed validation"
+      )
 
       for entry in validated {
         seenWords.insert(entry.word)
@@ -278,10 +276,14 @@ final class AIWordService: Sendable {
     }
 
     let minimumRequired = max(Int(Double(count) * Self.minimumValidFraction), 1)
-    let aiWordSet = Set(allGenerated.map { $0.word })
-    logger.info("AI generation complete: \(allGenerated.count) validated words (minimum required: \(minimumRequired))")
+    let aiWordSet = Set(allGenerated.map(\.word))
+    logger.info(
+      "AI generation complete: \(allGenerated.count) validated words (minimum required: \(minimumRequired))"
+    )
 
     if allGenerated.count >= minimumRequired {
+      appendRecentWords(allGenerated.map(\.word))
+
       var results = allGenerated
       let supplemented = results.count < count
       if supplemented {
@@ -291,6 +293,7 @@ final class AIWordService: Sendable {
         logger.info("Supplementing with \(extra.count) bundled words (had \(results.count)/\(count) from AI)")
         results.append(contentsOf: extra)
       }
+
       return GenerationResult(
         words: Array(results.prefix(count)),
         aiGeneratedWords: aiWordSet,
@@ -301,15 +304,266 @@ final class AIWordService: Sendable {
       )
     }
 
-    logger.warning("AI validation failed: only \(allGenerated.count) words passed (needed \(minimumRequired)) — falling back to bundled list")
-    return GenerationResult(
-      words: fallbackWords(count: count, maxLength: maxLength, seed: seed),
-      aiGeneratedWords: [],
-      status: .validationFailed,
-      detail:
-        "Accepted \(allGenerated.count) validated AI entries; required at least \(minimumRequired) to use AI output."
+    logger.warning(
+      "AI validation failed: only \(allGenerated.count) words passed (needed \(minimumRequired)) — trying AI clue rewrite on bundled words"
+    )
+    return await fallbackWithAIClues(
+      count: count,
+      maxLength: maxLength,
+      seed: seed,
+      baseDetail: "Accepted \(allGenerated.count) validated AI entries; required at least \(minimumRequired) to use AI output."
     )
   }
+
+  // MARK: - Prompt building
+
+  private func makeAvoidBlock(from recentWords: [String]) -> String {
+    guard !recentWords.isEmpty else { return "" }
+
+    let avoid = recentWords
+      .suffix(promptAvoidWordsLimit)
+      .joined(separator: ", ")
+
+    return """
+
+    RECENTLY USED / OVERUSED WORDS
+    Avoid reusing these recently used or overused answers unless absolutely necessary:
+    \(avoid)
+    """
+  }
+
+  private func makeInstructions(maxLength: Int, avoidBlock: String) -> String {
+    """
+    You are an expert newspaper crossword constructor generating entries for a small crossword puzzle (5x5, 6x6, or 7x7 grid).
+
+    Generate engaging English crossword entries with clever crossword-style clues.
+
+    ANCHOR ENTRIES
+    First generate exactly 3 anchor words that are 6-\(maxLength) letters long.
+    Anchor words should be vivid, familiar, image-evoking, modern-feeling, and fun for a crossword.
+    Prefer strong, concrete or lively words such as actions, moods, objects, places, weather, food, or natural imagery.
+    Do not make all anchor words share the same letter pattern.
+
+    SUPPORTING ENTRIES
+    Then generate exactly 25 additional entries.
+
+    WORD RULES
+    - Words must be 3 to \(maxLength) letters long
+    - Never exceed \(maxLength) letters
+    - Include at least 4 three-letter words
+    - Include a good mix of 4-, 5-, 6-, and \(maxLength)-letter words when possible
+    - Words must be UPPERCASE letters only (A-Z)
+    - No proper nouns
+    - No offensive words
+    - No slang-heavy or overly obscure terms
+    - All words must be unique within the batch
+
+    CROSSWORD-FRIENDLY LETTER RULES
+    - Prefer words with a healthy mix of vowels and consonants
+    - Prefer common crossword-friendly letters like A, E, R, S, T, L, N
+    - Prefer vivid, common, or interesting vocabulary
+    - Avoid excessive repeated letters
+    - Avoid words with awkward letter patterns or rare endings unless the word is very common
+    - Avoid obscure crossword filler such as ETA, ERE, ORE, OLE, ALA
+    - Avoid repeating the same starting letter more than twice
+
+    VARIETY AND NOVELTY
+    - Bias toward fresh, varied entries rather than default crossword favorites
+    - If multiple valid answers are possible, prefer the less predictable but still familiar option
+    - Avoid repeatedly choosing the same standout words across runs
+    - Seek diversity across semantic categories, imagery, mood, and letter patterns
+    - Spread entries across categories such as actions, objects, food, weather, places, moods, animals, home life, work life, travel, and everyday situations
+    - Avoid clustering too many entries with similar tone, imagery, or structure
+    - Avoid overly model-favored repeated answers unless necessary for quality\(avoidBlock)
+
+    MINI PUZZLE STYLE
+    The puzzle should feel like a modern, playful mini crossword.
+
+    Prefer entries that feel lively, contemporary, visual, sensory, or conversational.
+    Favor words that suggest scenes, moods, actions, personality, or everyday moments.
+
+    Avoid overly generic entries like:
+    TREE
+    ROCK
+    THING
+    ITEM
+    STUFF
+
+    Use a light micro-theme across some entries when possible.
+    A micro-theme means 4-8 entries share a subtle common vibe, such as:
+    morning routine, weather, travel, food, weekends, cozy home, work life, outdoors, music, school, or internet life.
+
+    The theme should feel natural and loose, not forced.
+    Do not make every entry match the theme.
+
+    SPARKLE ENTRIES
+    Include at least 3 standout entries that feel especially fun, vivid, modern, or clever.
+    These should still be common enough to feel fair and fillable.
+
+    CLUE RULES
+    - Every word must include a crossword-style clue
+    - Clues must be 2-8 words
+    - Clues must not contain the answer word or any form of it
+    - Clues should be witty, indirect, playful, metaphorical, conversational, or lightly clever when possible
+    - Avoid plain dictionary definitions when possible
+    - Clues must read like complete natural phrases, never sentence fragments cut off mid-thought
+    - At least 30% of clues should include mild misdirection, figurative language, double meaning, or light humor
+    - Prefer clues that feel like a modern mini crossword rather than a classroom vocabulary quiz
+
+    CLUE STYLE GUIDANCE
+    Good clue styles include:
+    - mild misdirection
+    - double meaning
+    - figurative phrasing
+    - playful everyday references
+    - conversational tone
+    - visual or sensory imagery
+    - modern life situations
+
+    Avoid clue styles that are:
+    - purely literal definitions
+    - overly formal
+    - stale or old-fashioned
+    - obviously repetitive in tone
+
+    OUTPUT FORMAT
+    Return exactly 28 entries total.
+    Return only entries in this exact format:
+    WORD — clue
+
+    Do not number the entries.
+    Do not add categories, explanations, headings, or extra text.
+    """
+  }
+
+  private func makeRoundPrompt(
+    round: Int,
+    maxLength: Int,
+    avoidWords: [String]
+  ) -> String {
+    let avoidLine: String
+    if avoidWords.isEmpty {
+      avoidLine = ""
+    } else {
+      avoidLine = """
+
+      Do NOT use any of these words:
+      \(avoidWords.joined(separator: ", "))
+      """
+    }
+
+    if round == 0 {
+      return """
+      Generate crossword word-clue pairs.
+      All words must be 3 to \(maxLength) letters long.
+      Include some 3-letter words.
+
+      Use clever modern mini-crossword-style clues.
+      Clues should be playful, natural, and sometimes indirect.
+      Prefer light misdirection, double meaning, figurative phrasing, or conversational tone.
+      Avoid plain dictionary definitions.
+
+      At least one third of clues should use mild misdirection or double meaning.
+
+      Bias toward fresh, varied entries rather than default crossword favorites.
+      If multiple valid answers are possible, prefer the less predictable but still familiar option.
+      Spread entries across different categories such as actions, objects, food, weather, places, moods, animals, and everyday life.
+      Avoid clustering too many entries with similar imagery, tone, or letter patterns.
+      Avoid overused model-favorite words such as SPARK, CRANE, GLOW, LATTE, BREEZE, and SNEAK.\(avoidLine)
+      """
+    } else {
+      return """
+      Generate more crossword word-clue pairs.
+      All words must be 3 to \(maxLength) letters long.
+      Include some 3-letter words.
+
+      Use clever modern mini-crossword-style clues.
+      Clues should be playful, natural, and sometimes indirect.
+      Prefer light misdirection, double meaning, figurative phrasing, or conversational tone.
+      Avoid plain dictionary definitions.
+
+      At least one third of clues should use mild misdirection or double meaning.
+
+      Bias toward fresh, varied entries rather than default crossword favorites.
+      If multiple valid answers are possible, prefer the less predictable but still familiar option.
+      Spread entries across different categories such as actions, objects, food, weather, places, moods, animals, and everyday life.
+      Avoid clustering too many entries with similar imagery, tone, or letter patterns.
+      Avoid overused model-favorite words such as SPARK, CRANE, GLOW, LATTE, BREEZE, and SNEAK.\(avoidLine)
+      """
+    }
+  }
+
+  // MARK: - Scoring / weighting
+
+  private func scoreCandidate(
+    word: String,
+    clue: String,
+    recentWords: Set<String>
+  ) -> Int {
+    var score = 0
+
+    if recentWords.contains(word) {
+      score -= 7
+    }
+
+    if genericWords.contains(word) {
+      score -= 8
+    }
+
+    if overusedModelFavorites.contains(word) {
+      score -= 6
+    }
+
+    let uppercaseClue = clue.uppercased()
+    if uppercaseClue.contains("SAY")
+      || uppercaseClue.contains("MAYBE")
+      || uppercaseClue.contains("SOMETIMES")
+      || uppercaseClue.contains("FIGURATIVELY")
+    {
+      score += 2
+    }
+
+    let vowels = word.filter { "AEIOU".contains($0) }.count
+    let consonants = word.count - vowels
+    if vowels >= 1 && consonants >= 2 {
+      score += 2
+    }
+
+    if word.count >= 5 {
+      score += 1
+    }
+
+    return score
+  }
+
+  // MARK: - Recent words persistence
+
+  private func loadRecentWords() -> [String] {
+    UserDefaults.standard.stringArray(forKey: recentWordsKey) ?? []
+  }
+
+  private func saveRecentWords(_ words: [String]) {
+    let normalized = Array(
+      words
+        .map { $0.uppercased() }
+        .removingDuplicatesPreservingOrder()
+        .suffix(recentWordsLimit)
+    )
+    UserDefaults.standard.set(normalized, forKey: recentWordsKey)
+  }
+
+  private func appendRecentWords(_ newWords: [String]) {
+    let existing = loadRecentWords()
+    saveRecentWords(existing + newWords.map { $0.uppercased() })
+  }
+
+  /// Clears the recent words history, allowing previously used words to be generated again.
+  func clearRecentWords() {
+    UserDefaults.standard.removeObject(forKey: recentWordsKey)
+    logger.info("Cleared AI recent words history")
+  }
+
+  // MARK: - Fallback
 
   /// Fallback: return words from the bundled wordlist.
   private func fallbackWords(count: Int, maxLength: Int, seed: UInt64) -> [WordClue] {
@@ -320,5 +574,153 @@ final class AIWordService: Sendable {
     var shuffled = all
     shuffled.shuffle(using: &rng)
     return Array(shuffled.prefix(count))
+  }
+
+  /// Fallback with AI clue enhancement: uses bundled words but rewrites clues
+  /// with Apple Intelligence if available. Falls back to bundled clues on failure/timeout.
+  private func fallbackWithAIClues(
+    count: Int,
+    maxLength: Int,
+    seed: UInt64,
+    baseDetail: String?
+  ) async -> GenerationResult {
+    let words = fallbackWords(count: count, maxLength: maxLength, seed: seed)
+
+    guard isAvailable else {
+      return GenerationResult(
+        words: words,
+        aiGeneratedWords: [],
+        status: .appleIntelligenceUnavailable,
+        detail: baseDetail
+      )
+    }
+
+    logger.info("Attempting AI clue rewrite for \(words.count) bundled words")
+
+    do {
+      let rewritten = try await withThrowingTaskGroup(of: [WordClue].self) { group in
+        group.addTask {
+          try await self.rewriteCluesWithAI(words: words)
+        }
+        group.addTask {
+          try await Task.sleep(for: .seconds(Self.clueRewriteTimeoutSeconds))
+          throw AITimeoutError()
+        }
+
+        if let result = try await group.next() {
+          group.cancelAll()
+          return result
+        }
+        return words
+      }
+
+      let rewrittenCount = zip(words, rewritten).filter { $0.clue != $1.clue }.count
+      logger.info("AI clue rewrite complete: \(rewrittenCount)/\(words.count) clues rewritten")
+
+      return GenerationResult(
+        words: rewritten,
+        aiGeneratedWords: [],
+        status: .fallbackWithAIClues,
+        detail: [baseDetail, "Rewrote \(rewrittenCount) clues with Apple Intelligence."]
+          .compactMap { $0 }
+          .joined(separator: " ")
+      )
+    } catch is AITimeoutError {
+      logger.warning("AI clue rewrite timed out — using bundled clues")
+      return GenerationResult(
+        words: words,
+        aiGeneratedWords: [],
+        status: .validationFailed,
+        detail: [baseDetail, "AI clue rewrite timed out."].compactMap { $0 }.joined(separator: " ")
+      )
+    } catch {
+      logger.warning("AI clue rewrite failed: \(error.localizedDescription) — using bundled clues")
+      return GenerationResult(
+        words: words,
+        aiGeneratedWords: [],
+        status: .validationFailed,
+        detail: [baseDetail, "AI clue rewrite failed."].compactMap { $0 }.joined(separator: " ")
+      )
+    }
+  }
+
+  // MARK: - AI clue rewriting
+
+  /// Rewrites bundled wordlist clues using Apple Intelligence for a more playful style.
+  private func rewriteCluesWithAI(words: [WordClue]) async throws -> [WordClue] {
+    let wordList = words.map { "\($0.word) — \($0.clue)" }.joined(separator: "\n")
+
+    let instructions = """
+    You are an expert crossword clue writer. You will be given crossword answers paired with plain dictionary-style clues.
+    Rewrite each clue to be clever, playful, and crossword-worthy.
+
+    RULES:
+    - Keep the exact same answer word (in UPPERCASE)
+    - Write a new clue that is 2-8 words long
+    - Clues must NOT contain the answer word or any form of it
+    - Prefer playful, indirect, figurative, conversational, or lightly witty clues
+    - Use mild misdirection, double meanings, or wordplay when possible
+    - Clues must read as complete natural phrases, never fragments
+    - Avoid plain dictionary definitions
+    - Return every word you are given — do not skip any
+    """
+
+    let session = LanguageModelSession(instructions: instructions)
+
+    let prompt = """
+    Rewrite the clues for these crossword answers. Keep the same words, just make the clues more fun:
+
+    \(wordList)
+    """
+
+    let response = try await session.respond(
+      to: prompt,
+      generating: RewrittenClueBatch.self
+    )
+
+    // Build a lookup from the AI response
+    var rewrittenClues: [String: String] = [:]
+    for entry in response.content.entries {
+      let word = entry.word.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+      let clue = entry.clue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+      guard !clue.isEmpty else { continue }
+
+      // Validate: clue must not contain the answer word
+      let clueWords = Set(
+        clue.uppercased()
+          .components(separatedBy: .whitespacesAndNewlines)
+          .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+          .filter { !$0.isEmpty }
+      )
+      guard !clueWords.contains(word) else { continue }
+
+      // Check for incomplete clue endings
+      let lastWord = clue
+        .components(separatedBy: .whitespacesAndNewlines)
+        .last?
+        .lowercased()
+        .trimmingCharacters(in: .punctuationCharacters) ?? ""
+      guard !Self.incompleteClueEnders.contains(lastWord) else { continue }
+
+      rewrittenClues[word] = clue
+    }
+
+    // Merge: use AI clue if available, otherwise keep bundled clue
+    return words.map { original in
+      if let aiClue = rewrittenClues[original.word] {
+        return WordClue(word: original.word, clue: aiClue)
+      }
+      return original
+    }
+  }
+}
+
+// MARK: - Helpers
+
+private extension Array where Element: Hashable {
+  func removingDuplicatesPreservingOrder() -> [Element] {
+    var seen = Set<Element>()
+    return filter { seen.insert($0).inserted }
   }
 }

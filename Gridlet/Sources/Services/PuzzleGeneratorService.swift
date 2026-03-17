@@ -104,9 +104,12 @@ final class PuzzleGeneratorService: @unchecked Sendable {
             let existingWords = Set(words.map { $0.uppercased() })
             let extra = wordListService.words(maxLength: dim)
                 .filter { !existingWords.contains($0.uppercased()) }
-                .prefix(60)
-            let combined = words + extra
-            logger.info("Layout supplement: adding \(extra.count) bundled words for retry (\(combined.count) total)")
+            var extraShuffled = Array(extra)
+            var supplementRng = GKMersenneTwisterRandomSource(seed: seed)
+            extraShuffled.shuffle(using: &supplementRng)
+            let supplementWords = Array(extraShuffled.prefix(60))
+            let combined = words + supplementWords
+            logger.info("Layout supplement: adding \(supplementWords.count) bundled words for retry (\(combined.count) total)")
             let retryResult = runLayoutAttempts(words: combined, seed: seed, dim: dim, minWords: minWords, preferredWords: aiWords)
             logger.info("Layout retry: placed \(retryResult.placed.count) words (was \(result.placed.count))")
 

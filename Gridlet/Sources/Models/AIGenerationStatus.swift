@@ -4,6 +4,7 @@ import Foundation
 enum AIGenerationStatus: String, Codable, Sendable, Equatable {
     case generatedWithAI
     case generatedWithAISupplement
+    case fallbackWithAIClues
     case appleIntelligenceUnavailable
     case generationRequestFailed
     case validationFailed
@@ -11,7 +12,7 @@ enum AIGenerationStatus: String, Codable, Sendable, Equatable {
 
     var isAIGenerated: Bool {
         switch self {
-        case .generatedWithAI, .generatedWithAISupplement:
+        case .generatedWithAI, .generatedWithAISupplement, .fallbackWithAIClues:
             return true
         case .appleIntelligenceUnavailable, .generationRequestFailed, .validationFailed, .fallbackReasonUnknown:
             return false
@@ -24,6 +25,8 @@ enum AIGenerationStatus: String, Codable, Sendable, Equatable {
             return "Generated with Apple Intelligence"
         case .generatedWithAISupplement:
             return "Generated with Apple Intelligence plus bundled word fallback"
+        case .fallbackWithAIClues:
+            return "Bundled words with Apple Intelligence clues"
         case .appleIntelligenceUnavailable:
             return "Apple Intelligence not supported or unavailable"
         case .generationRequestFailed:

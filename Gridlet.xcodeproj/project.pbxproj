@@ -27,6 +27,7 @@
 		8CBD1041916971ACF0AB743E /* GeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEE1B9C182A04B27356A06F3 /* GeneratorTests.swift */; };
 		93981B2A6A7BE3DE00B4976A /* DevInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06E91B48F824BF1EC785209 /* DevInfoView.swift */; };
 		9487AD2E1E5E56C7394A329D /* GridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E984CC505A6561010A8EDC /* GridView.swift */; };
+		9AE8607E8583ED801FA92FAA /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6A324ECDE5C674B5CEC822 /* NotificationService.swift */; };
 		A22BD57A473F3F86190F357D /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E057B13461FC75EF2DFA0F68 /* GameState.swift */; };
 		A47BCE313BE79B99F1592D5D /* PersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFBA874EDADDD03362CAEC06 /* PersistenceService.swift */; };
 		A6FEE118B21D16DE9FDDA18F /* ModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8056BE2FDC3E348EF003E8 /* ModelTests.swift */; };
@@ -76,6 +77,7 @@
 		7EB7DE92A992B47B61ED5C15 /* GridSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridSize.swift; sourceTree = "<group>"; };
 		82F372CF2801E86DF5E32A54 /* AIGenerationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGenerationStatus.swift; sourceTree = "<group>"; };
 		8C40CE59F94B6EE08C2DA47A /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
+		8D6A324ECDE5C674B5CEC822 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		96A9F1EFA3F3DB2B9CD4F1C7 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		9E311F74BA6D26C76D5D9ED8 /* AcknowledgmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgmentsView.swift; sourceTree = "<group>"; };
 		A1E984CC505A6561010A8EDC /* GridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridView.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 			children = (
 				2391CB3F5500032E9FEBBDA0 /* AIWordService.swift */,
 				309D293C6511815873AF8A4F /* DailyPuzzleService.swift */,
+				8D6A324ECDE5C674B5CEC822 /* NotificationService.swift */,
 				CFBA874EDADDD03362CAEC06 /* PersistenceService.swift */,
 				AB4EBBEB4C3786D5AC846822 /* PuzzleGeneratorService.swift */,
 				36C669B10D072EC70CDD1F8A /* WordListService.swift */,
@@ -337,6 +340,7 @@
 				7D040D80135493A8203B5023 /* GridletApp.swift in Sources */,
 				F5F35CC7C94943622262CC29 /* HomeView.swift in Sources */,
 				1B241B3AE4A31796856042B2 /* KeyboardView.swift in Sources */,
+				9AE8607E8583ED801FA92FAA /* NotificationService.swift in Sources */,
 				BA92BE3665EEAA686FC0A28B /* OnboardingView.swift in Sources */,
 				A47BCE313BE79B99F1592D5D /* PersistenceService.swift in Sources */,
 				5F7DB57736EBB1BD58C6111F /* PlayerStats.swift in Sources */,

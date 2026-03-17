@@ -293,7 +293,7 @@ final class CrosswordLayoutGenerator {
         var score = 1
         var hasIntersection = currentWords.isEmpty  // first word doesn't need intersection
 
-        for (i, letter) in word.enumerated() {
+        for (_, letter) in word.enumerated() {
             let letterStr = String(letter)
             let cell = getCell(column: c, row: r)
 

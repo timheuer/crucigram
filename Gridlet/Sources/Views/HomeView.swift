@@ -153,6 +153,34 @@ struct HomeView: View {
             .controlSize(.large)
             .tint(.orange)
             .accessibilityHint("Shows the onboarding tutorial again.")
+
+            Button {
+              testNotification()
+            } label: {
+              HStack {
+                Image(systemName: "bell.badge")
+                Text("Test Notification (5s)")
+              }
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(.orange)
+            .accessibilityHint("Sends a test daily reminder notification in 5 seconds.")
+
+            Button {
+              AIWordService.shared.clearRecentWords()
+            } label: {
+              HStack {
+                Image(systemName: "trash")
+                Text("Clear Word History")
+              }
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(.orange)
+            .accessibilityHint("Clears the AI recent words history so previously used words can appear again.")
           }
         }
         .padding(.horizontal, 32)
@@ -390,6 +418,13 @@ struct HomeView: View {
     stats.lastDailyCompletedDate = nil
     try? persistence.savePlayerStats(stats)
     refreshStats()
+  }
+
+  private func testNotification() {
+    Task {
+      await NotificationService.shared.requestPermission()
+      NotificationService.shared.scheduleTestNotification(streak: stats.currentStreak)
+    }
   }
 }
 
