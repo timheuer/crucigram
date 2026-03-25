@@ -234,7 +234,7 @@ struct HomeView: View {
       }
       .onAppear {
         refreshStats()
-        Task {
+        Task(priority: .utility) {
           await warmupService.startWarmup()
         }
       }
