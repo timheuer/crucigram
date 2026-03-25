@@ -325,6 +325,9 @@ struct HomeView: View {
     puzzleVM = PuzzleViewModel(puzzle: puzzle, gameState: savedState)
     puzzleVM?.devMode = devModeEnabled
     navigateToPuzzle = true
+    Task {
+      await warmupService.warmNextUnlimitedPuzzle()
+    }
   }
 
   private func startNewUnlimitedPuzzle() {
@@ -332,9 +335,11 @@ struct HomeView: View {
     persistence.clearUnlimitedGameState()
     persistence.clearUnlimitedPuzzle()
 
-    startGenerating()
-
     Task {
+      let timeoutSeconds = await warmupService.unlimitedWarmupTimeoutSeconds()
+      await MainActor.run {
+        startGenerating(timeoutSeconds: timeoutSeconds)
+      }
       let puzzle = await warmupService.unlimitedPuzzle()
       let gameState = GameState(puzzleId: puzzle.id, isDaily: false, gridSize: puzzle.gridSize)
 
@@ -392,9 +397,9 @@ struct HomeView: View {
 
   // MARK: - Generating Phrases
 
-  private func startGenerating() {
+  private func startGenerating(timeoutSeconds: TimeInterval = AIWordService.aiTimeoutSeconds) {
     generatingPhraseIndex = Int.random(in: 0..<generatingPhrases.count)
-    countdownSeconds = Int(AIWordService.aiTimeoutSeconds)
+    countdownSeconds = Int(timeoutSeconds.rounded())
     isGenerating = true
     generatingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
       Task { @MainActor in

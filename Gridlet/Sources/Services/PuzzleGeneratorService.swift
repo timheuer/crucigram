@@ -43,7 +43,10 @@ final class PuzzleGeneratorService: @unchecked Sendable {
 
     /// Generate a puzzle using Apple Intelligence for word/clue generation (async).
     /// Falls back to bundled list if AI is unavailable.
-    func generateWithAI(seed: UInt64) async -> PuzzleDefinition {
+    func generateWithAI(
+        seed: UInt64,
+        timeoutSeconds: TimeInterval = AIWordService.aiTimeoutSeconds
+    ) async -> PuzzleDefinition {
         let rng = GKMersenneTwisterRandomSource(seed: seed)
         let roll = rng.nextInt(upperBound: 20)
         // ~10% 5×5, ~45% 6×6, ~45% 7×7
@@ -51,7 +54,12 @@ final class PuzzleGeneratorService: @unchecked Sendable {
         let dim = gridSize.dimension
 
         // Get AI-generated words and diagnostics
-        let generationResult = await aiWordService.generateWordClues(count: 30, maxLength: dim, seed: seed)
+        let generationResult = await aiWordService.generateWordClues(
+            count: 30,
+            maxLength: dim,
+            seed: seed,
+            timeoutSeconds: timeoutSeconds
+        )
         let wordClues = generationResult.words
         let aiGeneratedWords = generationResult.aiGeneratedWords
 

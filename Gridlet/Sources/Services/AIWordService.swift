@@ -118,7 +118,12 @@ final class AIWordService: Sendable {
   /// Makes multiple batch requests to accumulate enough entries.
   /// Falls back to bundled list if AI doesn't finish within the timeout.
   /// Returns the words along with generation diagnostics for developer mode.
-  func generateWordClues(count: Int, maxLength: Int, seed: UInt64) async -> GenerationResult {
+  func generateWordClues(
+    count: Int,
+    maxLength: Int,
+    seed: UInt64,
+    timeoutSeconds: TimeInterval = aiTimeoutSeconds
+  ) async -> GenerationResult {
     guard isAvailable else {
       logger.info("Apple Intelligence unavailable — using bundled fallback words")
       return GenerationResult(
@@ -129,13 +134,15 @@ final class AIWordService: Sendable {
       )
     }
 
+    let timeoutDescription = Int(timeoutSeconds.rounded())
+
     do {
       return try await withThrowingTaskGroup(of: GenerationResult.self) { group in
         group.addTask {
           try await self.generateWithAI(count: count, maxLength: maxLength, seed: seed)
         }
         group.addTask {
-          try await Task.sleep(for: .seconds(Self.aiTimeoutSeconds))
+          try await Task.sleep(for: .seconds(timeoutSeconds))
           throw AITimeoutError()
         }
 
@@ -153,13 +160,13 @@ final class AIWordService: Sendable {
       }
     } catch is AITimeoutError {
       logger.warning(
-        "AI generation timed out after \(Int(Self.aiTimeoutSeconds))s — trying AI clue rewrite on bundled words"
+        "AI generation timed out after \(timeoutDescription)s — trying AI clue rewrite on bundled words"
       )
       return await fallbackWithAIClues(
         count: count,
         maxLength: maxLength,
         seed: seed,
-        baseDetail: "AI generation timed out after \(Int(Self.aiTimeoutSeconds))s."
+        baseDetail: "AI generation timed out after \(timeoutDescription)s."
       )
     } catch {
       logger.error("AI generation failed: \(error.localizedDescription) — trying AI clue rewrite on bundled words")
