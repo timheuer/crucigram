@@ -135,6 +135,11 @@ def is_blocked_or_variant(word: str) -> bool:
 
 
 def variant_forms(root: str) -> set[str]:
+    """Generate common safety-focused variants for blocked roots.
+
+    Handles regular plurals, -ed/-ing verb forms, and simple agent nouns.
+    Roots ending in -ie switch to -ying (die -> dying).
+    """
     forms = {root}
     ends_with_ie = root.endswith('ie')
 
@@ -165,6 +170,11 @@ def variant_forms(root: str) -> set[str]:
 
 
 def plural_form(root: str) -> str:
+    """Pluralize a blocked root for runtime/script safety checks.
+
+    Single-z roots append "zes", which adds a second z to the existing trailing
+    z (quiz -> quizzes).
+    """
     if root.endswith('z') and not root.endswith('zz'):
         return root + 'zes'
     return root + 'es' if needs_es_plural(root) else root + 's'

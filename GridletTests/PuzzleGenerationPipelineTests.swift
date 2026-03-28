@@ -32,7 +32,7 @@ struct PuzzleGenerationPipelineTests {
             #expect(WordSafetyFilter.isBlocked(blocked), "\(blocked) should be blocked")
         }
 
-        for allowed in ["GRAPE", "RAPID", "CLASS", "CLASSIC", "ASSESS", "GUNNER", "SEXTET"] {
+        for allowed in ["GRAPE", "GRASS", "RAPID", "CLASS", "CLASSIC", "ASSESS", "GUNNER", "SEXTET"] {
             #expect(!WordSafetyFilter.isBlocked(allowed), "\(allowed) should remain allowed")
         }
     }

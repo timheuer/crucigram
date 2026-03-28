@@ -57,6 +57,9 @@ enum WordSafetyFilter {
     return blockedWords.contains(normalized) || sensitiveVariants.contains(normalized)
   }
 
+  /// Generates a small, safety-focused set of common inflections for blocked roots.
+  /// Handles regular -s/-es plurals, -ed/-ing verb forms, and common agent-noun
+  /// forms like RAPE -> RAPER. Roots ending in -ie switch to -ying (DIE -> DYING).
   private static func variantForms(for root: String) -> Set<String> {
     var forms: Set<String> = [root]
     let endsWithIE = root.hasSuffix("ie")
@@ -85,6 +88,8 @@ enum WordSafetyFilter {
     return forms
   }
 
+  /// Forms plurals for roots that need runtime safety matching. Single-z roots use
+  /// + "zes", which appends an extra z to the existing trailing z (QUIZ -> QUIZZES).
   private static func pluralForm(for root: String) -> String {
     if root.hasSuffix("z") && !root.hasSuffix("zz") {
       return root + "zes"
