@@ -244,6 +244,11 @@ final class AIWordService: Sendable {
           return nil
         }
 
+        if WordSafetyFilter.isBlocked(word) {
+          logger.debug("Rejected '\(word)': blocked by safety filter")
+          return nil
+        }
+
         if clue.isEmpty {
           logger.debug("Rejected '\(word)': empty clue")
           return nil
@@ -654,6 +659,7 @@ final class AIWordService: Sendable {
     let solvedWords = Set(persistence.loadSolvedWords())
     let all = fallbackService.entries.filter {
       $0.word.count >= 3 && $0.word.count <= maxLength
+        && !WordSafetyFilter.isBlocked($0.word)
         && !solvedWords.contains($0.word.uppercased())
     }
     var rng = GKMersenneTwisterRandomSource(seed: seed)
