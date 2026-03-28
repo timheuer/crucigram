@@ -191,6 +191,8 @@ final class AIWordService: Sendable {
   // MARK: - AI generation
 
   /// The actual AI generation logic, extracted so it can be raced against a timeout.
+  /// All batch rounds are launched concurrently so their inference runs in parallel,
+  /// delivering roughly the latency of a single round instead of batchRounds × latency.
   private func generateWithAI(count: Int, maxLength: Int, seed: UInt64) async throws
     -> GenerationResult
   {
@@ -201,102 +203,60 @@ final class AIWordService: Sendable {
     let avoidBlock = makeAvoidBlock(from: solvedWords + recentWords)
     let instructions = makeInstructions(maxLength: maxLength, avoidBlock: avoidBlock)
 
+    // Build the avoid-words list once; all rounds share the same base list because
+    // they run concurrently and cannot accumulate seen words from prior rounds.
+    let baseAvoidWords = Array(
+      recentWordsSet.union(solvedWordsSet)
+        .sorted()
+        .prefix(promptAvoidWordsLimit)
+    )
+
     var allGenerated: [WordClue] = []
     var seenWords: Set<String> = []
 
-    for round in 0..<Self.batchRounds {
-      try Task.checkCancellation()
+    // Launch all batch rounds concurrently. Collect validated results as each round
+    // finishes and cancel the remaining rounds once we have enough words.
+    try await withThrowingTaskGroup(of: (Int, [WordClue]).self) { group in
+      for round in 0..<Self.batchRounds {
+        group.addTask {
+          try Task.checkCancellation()
 
-      // Create a fresh session per round so conversation history from previous
-      // rounds does not accumulate and exhaust the model's context window.
-      let session = LanguageModelSession(instructions: instructions)
-
-      let combinedAvoidWords = Array(seenWords.union(recentWordsSet).union(solvedWordsSet)).sorted()
-      let roundPrompt = makeRoundPrompt(
-        round: round,
-        maxLength: maxLength,
-        avoidWords: Array(combinedAvoidWords.prefix(promptAvoidWordsLimit))
-      )
-
-      let response = try await session.respond(
-        to: roundPrompt,
-        generating: WordClueBatch.self
-      )
-
-      let validated = response.content.entries.compactMap { entry -> WordClue? in
-        let word = entry.word.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        let clue = entry.clue.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let clueWords = Set(
-          clue.uppercased()
-            .components(separatedBy: .whitespacesAndNewlines)
-            .map { $0.trimmingCharacters(in: .punctuationCharacters) }
-            .filter { !$0.isEmpty }
-        )
-
-        if word.count < 3 || word.count > maxLength {
-          logger.debug("Rejected '\(word)': length \(word.count) out of range 3-\(maxLength)")
-          return nil
+          // Create a fresh session per round so context windows remain independent.
+          let session = LanguageModelSession(instructions: instructions)
+          let roundPrompt = self.makeRoundPrompt(
+            round: round,
+            maxLength: maxLength,
+            avoidWords: baseAvoidWords
+          )
+          let response = try await session.respond(
+            to: roundPrompt,
+            generating: WordClueBatch.self
+          )
+          let validated = self.validateBatchEntries(
+            response.content.entries,
+            maxLength: maxLength,
+            recentWordsSet: recentWordsSet,
+            solvedWordsSet: solvedWordsSet
+          )
+          logger.info(
+            "Round \(round + 1)/\(Self.batchRounds): AI returned \(response.content.entries.count) entries, \(validated.count) passed validation"
+          )
+          return (round, validated)
         }
-
-        if !word.allSatisfy({ $0.isLetter && $0.isASCII }) {
-          logger.debug("Rejected '\(word)': contains non-ASCII or non-letter characters")
-          return nil
-        }
-
-        if clue.isEmpty {
-          logger.debug("Rejected '\(word)': empty clue")
-          return nil
-        }
-
-        if solvedWordsSet.contains(word) {
-          logger.debug("Rejected '\(word)': already used in a solved puzzle")
-          return nil
-        }
-
-        if seenWords.contains(word) {
-          logger.debug("Rejected '\(word)': duplicate word in current run")
-          return nil
-        }
-
-        if Self.clueContainsAnswerOrForm(clueWords, answerWord: word) {
-          logger.debug(
-            "Rejected '\(word)': clue '\(clue)' contains the answer word or a form of it")
-          return nil
-        }
-
-        let lastWord =
-          clue
-          .components(separatedBy: .whitespacesAndNewlines)
-          .last?
-          .lowercased()
-          .trimmingCharacters(in: .punctuationCharacters) ?? ""
-
-        if Self.incompleteClueEnders.contains(lastWord) {
-          logger.debug("Rejected '\(word)': clue '\(clue)' ends with incomplete word '\(lastWord)'")
-          return nil
-        }
-
-        let score = scoreCandidate(word: word, clue: clue, recentWords: recentWordsSet)
-        if score < -5 {
-          logger.debug("Rejected '\(word)': low novelty/quality score \(score)")
-          return nil
-        }
-
-        logger.debug("Accepted '\(word)' → '\(clue)' [score: \(score)]")
-        return WordClue(word: word, clue: clue)
       }
 
-      logger.info(
-        "Round \(round + 1)/\(Self.batchRounds): AI returned \(response.content.entries.count) entries, \(validated.count) passed validation"
-      )
-
-      for entry in validated {
-        seenWords.insert(entry.word)
-        allGenerated.append(entry)
+      for try await (_, roundWords) in group {
+        for word in roundWords {
+          if !seenWords.contains(word.word) {
+            seenWords.insert(word.word)
+            allGenerated.append(word)
+          }
+        }
+        if allGenerated.count >= count {
+          group.cancelAll()
+          break
+        }
       }
-
-      if allGenerated.count >= count { break }
     }
 
     let minimumRequired = max(Int(Double(count) * Self.minimumValidFraction), 1)
@@ -341,6 +301,81 @@ final class AIWordService: Sendable {
     )
   }
 
+  /// Validates and filters a batch of generated entries against quality and length rules.
+  /// Each batch is deduplicated internally; cross-round deduplication is handled by the caller.
+  private func validateBatchEntries(
+    _ entries: [GeneratedWordClue],
+    maxLength: Int,
+    recentWordsSet: Set<String>,
+    solvedWordsSet: Set<String>
+  ) -> [WordClue] {
+    var batchSeen: Set<String> = []
+    return entries.compactMap { entry -> WordClue? in
+      let word = entry.word.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+      let clue = entry.clue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+      let clueWords = Set(
+        clue.uppercased()
+          .components(separatedBy: .whitespacesAndNewlines)
+          .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+          .filter { !$0.isEmpty }
+      )
+
+      if word.count < 3 || word.count > maxLength {
+        logger.debug("Rejected '\(word)': length \(word.count) out of range 3-\(maxLength)")
+        return nil
+      }
+
+      if !word.allSatisfy({ $0.isLetter && $0.isASCII }) {
+        logger.debug("Rejected '\(word)': contains non-ASCII or non-letter characters")
+        return nil
+      }
+
+      if clue.isEmpty {
+        logger.debug("Rejected '\(word)': empty clue")
+        return nil
+      }
+
+      if solvedWordsSet.contains(word) {
+        logger.debug("Rejected '\(word)': already used in a solved puzzle")
+        return nil
+      }
+
+      if batchSeen.contains(word) {
+        logger.debug("Rejected '\(word)': duplicate word in batch")
+        return nil
+      }
+
+      if Self.clueContainsAnswerOrForm(clueWords, answerWord: word) {
+        logger.debug(
+          "Rejected '\(word)': clue '\(clue)' contains the answer word or a form of it")
+        return nil
+      }
+
+      let lastWord =
+        clue
+        .components(separatedBy: .whitespacesAndNewlines)
+        .last?
+        .lowercased()
+        .trimmingCharacters(in: .punctuationCharacters) ?? ""
+
+      if Self.incompleteClueEnders.contains(lastWord) {
+        logger.debug("Rejected '\(word)': clue '\(clue)' ends with incomplete word '\(lastWord)'")
+        return nil
+      }
+
+      let score = scoreCandidate(word: word, clue: clue, recentWords: recentWordsSet)
+      if score < -5 {
+        logger.debug("Rejected '\(word)': low novelty/quality score \(score)")
+        return nil
+      }
+
+      logger.debug("Accepted '\(word)' → '\(clue)' [score: \(score)]")
+      batchSeen.insert(word)
+      return WordClue(word: word, clue: clue)
+    }
+  }
+
   // MARK: - Prompt building
 
   private func makeAvoidBlock(from recentWords: [String]) -> String {
@@ -366,13 +401,13 @@ final class AIWordService: Sendable {
     Generate engaging English crossword entries with clever crossword-style clues.
 
     ANCHOR ENTRIES
-    First generate exactly 3 anchor words that are 6-\(maxLength) letters long.
+    Include some 6-\(maxLength) letter anchor words.
     Anchor words should be vivid, familiar, image-evoking, modern-feeling, and fun for a crossword.
     Prefer strong, concrete or lively words such as actions, moods, objects, places, weather, food, or natural imagery.
     Do not make all anchor words share the same letter pattern.
 
     SUPPORTING ENTRIES
-    Then generate exactly 25 additional entries.
+    Fill the remaining entries with a variety of shorter words.
 
     WORD RULES
     - Words must be 3 to \(maxLength) letters long
@@ -452,14 +487,6 @@ final class AIWordService: Sendable {
     - overly formal
     - stale or old-fashioned
     - obviously repetitive in tone
-
-    OUTPUT FORMAT
-    Return exactly 28 entries total.
-    Return only entries in this exact format:
-    WORD — clue
-
-    Do not number the entries.
-    Do not add categories, explanations, headings, or extra text.
     """
   }
 
@@ -479,45 +506,39 @@ final class AIWordService: Sendable {
         """
     }
 
-    if round == 0 {
-      return """
-        Generate crossword word-clue pairs.
-        All words must be 3 to \(maxLength) letters long.
-        Include some 3-letter words.
-
-        Use clever modern mini-crossword-style clues.
-        Clues should be playful, natural, and sometimes indirect.
-        Prefer light misdirection, double meaning, figurative phrasing, or conversational tone.
-        Avoid plain dictionary definitions.
-
-        At least one third of clues should use mild misdirection or double meaning.
-
-        Bias toward fresh, varied entries rather than default crossword favorites.
-        If multiple valid answers are possible, prefer the less predictable but still familiar option.
-        Spread entries across different categories such as actions, objects, food, weather, places, moods, animals, and everyday life.
-        Avoid clustering too many entries with similar imagery, tone, or letter patterns.
-        Avoid overused model-favorite words such as SPARK, CRANE, GLOW, LATTE, BREEZE, and SNEAK.\(avoidLine)
-        """
-    } else {
-      return """
-        Generate more crossword word-clue pairs.
-        All words must be 3 to \(maxLength) letters long.
-        Include some 3-letter words.
-
-        Use clever modern mini-crossword-style clues.
-        Clues should be playful, natural, and sometimes indirect.
-        Prefer light misdirection, double meaning, figurative phrasing, or conversational tone.
-        Avoid plain dictionary definitions.
-
-        At least one third of clues should use mild misdirection or double meaning.
-
-        Bias toward fresh, varied entries rather than default crossword favorites.
-        If multiple valid answers are possible, prefer the less predictable but still familiar option.
-        Spread entries across different categories such as actions, objects, food, weather, places, moods, animals, and everyday life.
-        Avoid clustering too many entries with similar imagery, tone, or letter patterns.
-        Avoid overused model-favorite words such as SPARK, CRANE, GLOW, LATTE, BREEZE, and SNEAK.\(avoidLine)
-        """
+    // Each round runs in parallel with the others, so we nudge each toward a
+    // different semantic space to maximise variety across the combined pool.
+    let categoryHint: String
+    switch round {
+    case 0:
+      categoryHint =
+        "Spread entries across actions, objects, animals, weather, and everyday life."
+    case 1:
+      categoryHint =
+        "Focus on food, places, travel, home life, and nature."
+    default:
+      categoryHint =
+        "Focus on emotions, personality traits, technology, work life, and school."
     }
+
+    return """
+      Generate crossword word-clue pairs.
+      All words must be 3 to \(maxLength) letters long.
+      Include some 3-letter words.
+
+      Use clever modern mini-crossword-style clues.
+      Clues should be playful, natural, and sometimes indirect.
+      Prefer light misdirection, double meaning, figurative phrasing, or conversational tone.
+      Avoid plain dictionary definitions.
+
+      At least one third of clues should use mild misdirection or double meaning.
+
+      Bias toward fresh, varied entries rather than default crossword favorites.
+      If multiple valid answers are possible, prefer the less predictable but still familiar option.
+      \(categoryHint)
+      Avoid clustering too many entries with similar imagery, tone, or letter patterns.
+      Avoid overused model-favorite words such as SPARK, CRANE, GLOW, LATTE, BREEZE, and SNEAK.\(avoidLine)
+      """
   }
 
   // MARK: - Scoring / weighting
