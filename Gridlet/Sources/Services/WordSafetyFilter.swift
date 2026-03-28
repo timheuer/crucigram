@@ -24,6 +24,9 @@ enum WordSafetyFilter {
     "texas", "paris", "london", "york", "roman",
   ]
 
+  // Only generate variants for safety-sensitive roots. Keeping this narrower than
+  // blockedWords avoids over-blocking benign fill such as CANS from the exact
+  // blocklisted function word CAN.
   private static let sensitiveRoots: Set<String> = [
     "ass", "damn", "hell", "crap", "slut", "whore", "bitch", "dick", "cock",
     "shit", "fuck", "piss", "tit", "cum", "porn", "anus", "rape",
@@ -72,7 +75,7 @@ enum WordSafetyFilter {
       forms.insert(stem + "ers")
       forms.insert(root + "s")
     } else {
-      forms.insert(needsESPlural(root) ? root + "es" : root + "s")
+      forms.insert(pluralForm(for: root))
       forms.insert(root + "ed")
       forms.insert(root + "ing")
       forms.insert(root + "er")
@@ -80,6 +83,13 @@ enum WordSafetyFilter {
     }
 
     return forms
+  }
+
+  private static func pluralForm(for root: String) -> String {
+    if root.hasSuffix("z") && !root.hasSuffix("zz") {
+      return root + "zes"
+    }
+    return needsESPlural(root) ? root + "es" : root + "s"
   }
 
   private static func needsESPlural(_ root: String) -> Bool {

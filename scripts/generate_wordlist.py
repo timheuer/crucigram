@@ -56,6 +56,9 @@ BLOCKLIST = {
     "texas", "paris", "london", "york", "roman",
 }
 
+# Only generate variants for safety-sensitive roots. Keeping this narrower than
+# BLOCKLIST avoids over-blocking benign fill such as CANS from the exact
+# blocklisted function word CAN.
 SENSITIVE_VARIANT_ROOTS = {
     "ass", "damn", "hell", "crap", "slut", "whore", "bitch", "dick", "cock",
     "shit", "fuck", "piss", "tit", "cum", "porn", "anus", "rape",
@@ -149,7 +152,7 @@ def variant_forms(root: str) -> set[str]:
             root + 's',
         })
     else:
-        plural = root + 'es' if needs_es_plural(root) else root + 's'
+        plural = plural_form(root)
         forms.update({
             plural,
             root + 'ed',
@@ -159,6 +162,12 @@ def variant_forms(root: str) -> set[str]:
         })
 
     return forms
+
+
+def plural_form(root: str) -> str:
+    if root.endswith('z') and not root.endswith('zz'):
+        return root + 'zes'
+    return root + 'es' if needs_es_plural(root) else root + 's'
 
 
 def needs_es_plural(root: str) -> bool:
