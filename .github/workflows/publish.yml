@@ -62,6 +62,32 @@ jobs:
                   name: ${{ needs.build.outputs.artifact_name }}
                   path: artifacts
 
+            - name: Validate IPA for TestFlight
+              shell: bash
+              env:
+                  APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+                  APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+                  APP_STORE_CONNECT_API_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+              run: |
+                  set -euo pipefail
+
+                  IPA_PATH=$(find artifacts -name '*.ipa' -print -quit)
+                  if [[ -z "$IPA_PATH" ]]; then
+                    echo "No IPA artifact found"
+                    exit 1
+                  fi
+
+                  mkdir -p ~/.appstoreconnect/private_keys
+                  printf '%s' "$APP_STORE_CONNECT_API_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
+                  xcrun altool \
+                    --validate-app \
+                    --type ios \
+                    --file "$IPA_PATH" \
+                    --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+                    --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+                    --verbose
+
             - name: Upload to TestFlight
               shell: bash
               env:
