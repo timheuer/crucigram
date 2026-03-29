@@ -34,7 +34,7 @@ struct GridCellView: View {
       // Dev mode: dimmed solution letter (shown when no player letter)
       if showSolution, letter == nil, let solution = solutionLetter {
         Text(String(solution))
-          .font(.system(size: 28, weight: .regular, design: .rounded))
+          .font(.system(size: 44, weight: .regular, design: .rounded))
           .foregroundStyle(Color.black.opacity(0.15))
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -42,7 +42,7 @@ struct GridCellView: View {
       // Player letter
       if let letter = letter {
         Text(String(letter))
-          .font(.system(size: 28, weight: .semibold, design: .rounded))
+          .font(.system(size: 44, weight: .semibold, design: .rounded))
           .foregroundStyle(Color.black)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       }

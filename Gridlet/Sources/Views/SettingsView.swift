@@ -78,7 +78,9 @@ struct SettingsView: View {
           if granted {
             notificationDenied = false
             let stats = PersistenceService.shared.loadPlayerStats()
-            NotificationService.shared.scheduleDailyReminderIfNeeded(stats: stats)
+            Task {
+              _ = await NotificationService.shared.scheduleDailyReminderIfNeeded(stats: stats)
+            }
           } else {
             notificationDenied = true
             dailyReminderEnabled = false

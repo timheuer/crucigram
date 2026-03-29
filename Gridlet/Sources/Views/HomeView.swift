@@ -11,6 +11,7 @@ struct HomeView: View {
   @State private var titleTapCount = 0
   @State private var showOnboarding = false
   @State private var showResumeAlert = false
+  @State private var showNotificationAlert = false
   @AppStorage("devModeEnabled") private var devModeEnabled = false
   @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
@@ -244,6 +245,11 @@ struct HomeView: View {
       .fullScreenCover(isPresented: $showOnboarding) {
         OnboardingView()
       }
+      .alert("Notifications Not Available", isPresented: $showNotificationAlert) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("Enable notifications in Settings to receive the test alert.")
+      }
       .alert("Resume Puzzle?", isPresented: $showResumeAlert) {
         Button("Resume") { resumeUnlimitedPuzzle() }
         Button("New Puzzle", role: .destructive) { startNewUnlimitedPuzzle() }
@@ -437,8 +443,21 @@ struct HomeView: View {
 
   private func testNotification() {
     Task {
-      await NotificationService.shared.requestPermission()
-      NotificationService.shared.scheduleTestNotification(streak: stats.currentStreak)
+      let granted = await NotificationService.shared.requestPermission()
+      guard granted else {
+        await MainActor.run {
+          showNotificationAlert = true
+        }
+        return
+      }
+
+      let scheduled = await NotificationService.shared.scheduleTestNotification(
+        streak: stats.currentStreak)
+      if !scheduled {
+        await MainActor.run {
+          showNotificationAlert = true
+        }
+      }
     }
   }
 }

@@ -261,16 +261,11 @@ final class PuzzleGeneratorService: @unchecked Sendable {
 
     let effectiveStatus: AIGenerationStatus
     let effectiveDetail: String?
-    if aiWordCount == 0 && aiGenerationStatus.isAIGenerated {
-      logger.warning(
-        "No AI words placed in grid — downgrading status from \(aiGenerationStatus.rawValue) to validationFailed"
-      )
-      effectiveStatus = .validationFailed
-      effectiveDetail = (aiGenerationDetail ?? "") + " No AI words were placed in the final grid."
-    } else {
-      effectiveStatus = aiGenerationStatus
-      effectiveDetail = aiGenerationDetail
-    }
+    (effectiveStatus, effectiveDetail) = Self.resolveAIGenerationStatus(
+      aiWordCount: aiWordCount,
+      aiGenerationStatus: aiGenerationStatus,
+      aiGenerationDetail: aiGenerationDetail
+    )
 
     return PuzzleDefinition(
       seed: seed,
@@ -281,6 +276,28 @@ final class PuzzleGeneratorService: @unchecked Sendable {
       aiGenerationStatus: effectiveStatus,
       aiGenerationDetail: effectiveDetail
     )
+  }
+
+  static func resolveAIGenerationStatus(
+    aiWordCount: Int,
+    aiGenerationStatus: AIGenerationStatus,
+    aiGenerationDetail: String?
+  ) -> (AIGenerationStatus, String?) {
+    if aiWordCount == 0 && aiGenerationStatus.isAIGenerated {
+      if aiGenerationStatus == .fallbackWithAIClues {
+        return (aiGenerationStatus, aiGenerationDetail)
+      }
+
+      logger.warning(
+        "No AI words placed in grid — downgrading status from \(aiGenerationStatus.rawValue) to validationFailed"
+      )
+      return (
+        .validationFailed,
+        (aiGenerationDetail ?? "") + " No AI words were placed in the final grid."
+      )
+    }
+
+    return (aiGenerationStatus, aiGenerationDetail)
   }
 
   // MARK: - Daily Puzzle Seed
