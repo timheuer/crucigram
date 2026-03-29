@@ -83,7 +83,10 @@ actor PuzzleWarmupService {
       let puzzle = await task.value
       unlimitedTask = nil
       unlimitedTaskTimeoutSeconds = nil
-      warmUnlimitedPuzzleIfNeeded(forceBackground: true)
+      warmUnlimitedPuzzleIfNeeded(
+        forceBackground: true,
+        additionalExclusions: Set(puzzle.words.map { $0.text.uppercased() })
+      )
       return puzzle
     }
 
@@ -91,7 +94,10 @@ actor PuzzleWarmupService {
       AIWordService.aiTimeoutSeconds,
       currentGameWords()
     )
-    warmUnlimitedPuzzleIfNeeded(forceBackground: true)
+    warmUnlimitedPuzzleIfNeeded(
+      forceBackground: true,
+      additionalExclusions: Set(puzzle.words.map { $0.text.uppercased() })
+    )
     return puzzle
   }
 
@@ -116,7 +122,9 @@ actor PuzzleWarmupService {
     dailyTask = Task { await dailyGenerator() }
   }
 
-  private func warmUnlimitedPuzzleIfNeeded(forceBackground: Bool = false) {
+  private func warmUnlimitedPuzzleIfNeeded(
+    forceBackground: Bool = false, additionalExclusions: Set<String> = []
+  ) {
     guard unlimitedTask == nil else { return }
 
     let timeoutSeconds =
@@ -126,7 +134,7 @@ actor PuzzleWarmupService {
         ? Self.backgroundUnlimitedTimeoutSeconds
         : AIWordService.aiTimeoutSeconds)
     unlimitedTaskTimeoutSeconds = timeoutSeconds
-    let excludedWords = currentGameWords()
+    let excludedWords = currentGameWords().union(additionalExclusions)
     unlimitedTask = Task { await unlimitedGenerator(timeoutSeconds, excludedWords) }
   }
 
@@ -153,7 +161,7 @@ actor PuzzleWarmupService {
   }
 
   private func currentGameWords() -> Set<String> {
-    var words = Set<String>()
+    var words = Set<String>(persistence.loadSolvedWords())
 
     if let dailyState = persistence.loadDailyGameState(),
       let dailyPuzzle = persistence.loadCachedDailyPuzzle(for: PlayerStats.todayString()),
