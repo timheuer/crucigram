@@ -217,6 +217,98 @@ struct PuzzleWarmupServiceTests {
     #expect(excludedWords.contains("BINGO"))
     #expect(excludedWords.contains("HOME"))
   }
+
+  @Test("Unlimited warmup excludes words from previously solved puzzles")
+  func unlimitedWarmupExcludesSolvedWords() async throws {
+    let tempDirectory = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+    let persistence = PersistenceService(documentsURL: tempDirectory)
+    try persistence.appendSolvedWords(["SWIM", "TALK", "WALK", "RUMBLE"])
+
+    let state = WarmupTestState()
+    state.setUnlimitedPuzzles([makeWarmupPuzzle(seed: 71)])
+
+    let service = PuzzleWarmupService(
+      persistence: persistence,
+      dailyIdentifier: { "2026-03-25" },
+      cachedDailyLoader: { _ in state.loadCachedDailyPuzzle() },
+      dailyGenerator: {
+        state.recordDailyGeneration()
+        return state.loadNextDailyPuzzle()
+      },
+      unlimitedGenerator: { timeoutSeconds, excludedWords in
+        state.recordUnlimitedGeneration(
+          timeoutSeconds: timeoutSeconds,
+          excludedWords: excludedWords
+        )
+        return state.dequeueUnlimitedPuzzle()
+      },
+      hasUnlimitedInProgress: { state.loadHasUnlimitedInProgress() }
+    )
+
+    await service.startWarmup()
+    try? await Task.sleep(for: .milliseconds(20))
+
+    let excludedWords = state.unlimitedExcludedWords()
+    #expect(excludedWords.contains("SWIM"))
+    #expect(excludedWords.contains("TALK"))
+    #expect(excludedWords.contains("WALK"))
+    #expect(excludedWords.contains("RUMBLE"))
+  }
+
+  @Test("Serving a puzzle excludes its words from the next background warmup")
+  func servingPuzzleExcludesItsWordsFromNextWarmup() async throws {
+    let state = WarmupTestState()
+
+    // First puzzle served from warmup — its word is "CRANE"
+    let servedPuzzle = makeWarmupPuzzle(
+      seed: 81,
+      id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+      word: "CRANE",
+      clue: "Construction site machine"
+    )
+    // Next puzzle queued for the follow-up warmup
+    let nextPuzzle = makeWarmupPuzzle(seed: 82)
+    state.setUnlimitedPuzzles([servedPuzzle, nextPuzzle])
+
+    let service = PuzzleWarmupService(
+      dailyIdentifier: { "2026-03-25" },
+      cachedDailyLoader: { _ in state.loadCachedDailyPuzzle() },
+      dailyGenerator: {
+        state.recordDailyGeneration()
+        return state.loadNextDailyPuzzle()
+      },
+      unlimitedGenerator: { timeoutSeconds, excludedWords in
+        state.recordUnlimitedGeneration(
+          timeoutSeconds: timeoutSeconds,
+          excludedWords: excludedWords
+        )
+        try? await Task.sleep(for: .milliseconds(20))
+        return state.dequeueUnlimitedPuzzle()
+      },
+      hasUnlimitedInProgress: { state.loadHasUnlimitedInProgress() }
+    )
+
+    // Kick off warmup so a pre-warmed task is in flight
+    await service.startWarmup()
+
+    // Serve the first puzzle — this should trigger warmup for the next one
+    let puzzle = await service.unlimitedPuzzle()
+    #expect(puzzle.id == servedPuzzle.id)
+
+    // Allow the follow-up background warmup to be scheduled and run
+    try? await Task.sleep(for: .milliseconds(60))
+
+    // The second generation call (for the follow-up warmup) should have excluded
+    // the words from the just-served puzzle
+    let allExcluded = state.unlimitedExcludedWordsByRound()
+    #expect(allExcluded.count == 2)
+    let followUpExcluded = allExcluded[1]
+    #expect(followUpExcluded.contains("CRANE"))
+  }
 }
 
 private final class WarmupTestState: @unchecked Sendable {
@@ -286,6 +378,12 @@ private final class WarmupTestState: @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     return Set(unlimitedExcludedWordSets.flatMap { $0 })
+  }
+
+  func unlimitedExcludedWordsByRound() -> [Set<String>] {
+    lock.lock()
+    defer { lock.unlock() }
+    return unlimitedExcludedWordSets
   }
 
   func loadCachedDailyPuzzle() -> PuzzleDefinition? {
